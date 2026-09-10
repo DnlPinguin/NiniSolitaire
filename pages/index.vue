@@ -507,12 +507,15 @@ onBeforeUnmount(() => {
 <template>
   <main class="container">
     <div class="knopfleiste">
-      <button class="sound" :title="muted ? 'Ton an' : 'Ton aus'" @click="toggleMute">
-        {{ muted ? '🔇' : '🔊' }}
-      </button>
-      <button class="sound" title="Geburtstagskarte nochmal ansehen" @click="replayCard">
-        💌
-      </button>
+      <span class="brandmark">Ninis <b>Spieleecke</b> 💖</span>
+      <div class="knoepfe">
+        <button class="sound" :title="muted ? 'Ton an' : 'Ton aus'" @click="toggleMute">
+          {{ muted ? '🔇' : '🔊' }}
+        </button>
+        <button class="sound" title="Geburtstagskarte nochmal ansehen" @click="replayCard">
+          💌
+        </button>
+      </div>
     </div>
 
     <section ref="boardRef" class="board" :class="{ collecting }">
@@ -727,9 +730,15 @@ onBeforeUnmount(() => {
 
 /* ---------- Knopfleiste oben rechts ---------- */
 .knopfleiste {
-  display: flex; justify-content: flex-end; gap: 7px;
-  margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px;
 }
+.knoepfe { display: flex; gap: 7px; }
+.brandmark {
+  font-family: 'Baloo 2', sans-serif; font-weight: 600;
+  font-size: 15px; color: var(--pink-400); white-space: nowrap;
+}
+.brandmark b { color: var(--pink-500); font-weight: 800; }
 .sound {
   width: 38px; height: 38px;
   border: 0; cursor: pointer; font-size: 17px;
