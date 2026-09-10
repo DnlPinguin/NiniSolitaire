@@ -52,15 +52,24 @@ function messeMehrfach() {
  */
 function stupsSafari() {
   const koerper = document.body
-  const vorher = koerper.style.minHeight
-  // ein paar Pixel Spielraum, sonst gibt es nichts zu scrollen
-  koerper.style.minHeight = `calc(var(--vvh, 100svh) + 3px)`
 
+  // Erst messen, dann Safari zwingen, alles neu zu zeichnen. Das Ausblenden
+  // fuer einen Wimpernschlag verwirft den alten, falschen Aufbau - genau das,
+  // was sonst erst das Schliessen und Neuoeffnen bewirkt.
+  messeSichtfeld()
+  const vorher = koerper.style.display
+  koerper.style.display = 'none'
+  void koerper.offsetHeight        // erzwingt den Neuaufbau
+  koerper.style.display = vorher
+
+  // danach noch ein kurzer Scroll-Stups, damit Safari seine Leisten festlegt
+  const hoehe = koerper.style.minHeight
+  koerper.style.minHeight = `calc(var(--vvh, 100svh) + 3px)`
   requestAnimationFrame(() => {
     window.scrollTo(0, 2)
     requestAnimationFrame(() => {
       window.scrollTo(0, 0)
-      koerper.style.minHeight = vorher
+      koerper.style.minHeight = hoehe
       messeSichtfeld()
     })
   })
