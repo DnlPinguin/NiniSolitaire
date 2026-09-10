@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Card, Source } from '~/composables/useSolitaire'
+import { RANK_LABELS, isRed, pupSrcFor, type Card, type Source, type Suit } from '~/composables/useSolitaire'
 
 useHead({ title: 'Solitaire · Ninis Spieleecke' })
 
@@ -130,6 +130,7 @@ async function startGame() {
 }
 
 onBeforeUnmount(() => {
+  stopCascade()
   runId++
   dealTimers.forEach(clearTimeout)
   document.querySelectorAll('.collect-layer').forEach(el => el.remove())
@@ -227,6 +228,120 @@ function showToast(msg: string) {
 function onHint() {
   if (!useHint()) showToast('Kein Zug möglich – zieh eine Karte 💗')
 }
+
+/* ---------------- Gewinn: Kartenkaskade ---------------- */
+const showWin = ref(false)
+
+interface Flyer { el: HTMLElement; x: number; y: number; vx: number; vy: number; w: number; h: number }
+let flyers: Flyer[] = []
+let winLayer: HTMLElement | null = null
+let winRaf = 0
+let winTimers: ReturnType<typeof setTimeout>[] = []
+
+function stopCascade() {
+  cancelAnimationFrame(winRaf)
+  winRaf = 0
+  winTimers.forEach(clearTimeout)
+  winTimers = []
+  flyers = []
+  winLayer?.remove()
+  winLayer = null
+}
+
+/** Baut eine Kartenkopie mit anderem Wert aus einer vorhandenen Karte. */
+function cloneAs(template: HTMLElement, suit: Suit, rank: number) {
+  const el = template.cloneNode(true) as HTMLElement
+  const rankEl = el.querySelector('.rank')
+  const suitEl = el.querySelector('.suit')
+  const img = el.querySelector('img') as HTMLImageElement | null
+  if (rankEl) rankEl.textContent = RANK_LABELS[rank]!
+  if (suitEl) suitEl.textContent = suit
+  if (img) img.src = pupSrcFor({ id: '', suit, rank, faceUp: true })
+  el.classList.toggle('red', isRed(suit))
+  el.style.position = 'absolute'
+  el.style.margin = '0'
+  el.style.willChange = 'transform'
+  return el
+}
+
+function runWinCascade() {
+  const container = document.querySelector('.container') as HTMLElement | null
+  const slots = Array.from(document.querySelectorAll('[data-drop-type="foundation"]')) as HTMLElement[]
+  if (!container || slots.length !== 4 || reducedMotion()) {
+    showWin.value = true
+    return
+  }
+
+  const layer = document.createElement('div')
+  layer.className = 'win-cascade'
+  const cs = getComputedStyle(container)
+  for (const prop of ['--card-w', '--card-h']) {
+    layer.style.setProperty(prop, cs.getPropertyValue(prop))
+  }
+  document.body.appendChild(layer)
+  winLayer = layer
+
+  // Welle für Welle: König zuerst, aus allen vier Ablagen gleichzeitig
+  for (let step = 0; step < 13; step++) {
+    winTimers.push(setTimeout(() => {
+      slots.forEach((slot, i) => {
+        const template = slot.querySelector('.card') as HTMLElement | null
+        const pile = foundations.value[i]
+        if (!template || !pile?.length) return
+        const suit = pile[0]!.suit
+        const rank = 13 - step
+        const r = template.getBoundingClientRect()
+        const el = cloneAs(template, suit, rank)
+        el.style.width = `${r.width}px`
+        el.style.height = `${r.height}px`
+        el.style.left = '0'
+        el.style.top = '0'
+        el.style.transform = `translate(${r.left}px, ${r.top}px)`
+        layer.appendChild(el)
+        flyers.push({
+          el, x: r.left, y: r.top,
+          vx: (i < 2 ? -1 : 1) * (1.4 + Math.random() * 2.6),
+          vy: -(5 + Math.random() * 5),
+          w: r.width, h: r.height
+        })
+      })
+    }, step * 190))
+  }
+
+  const GRAVITY = 0.62
+  const BOUNCE = 0.74
+  function frame() {
+    const floor = window.innerHeight
+    for (let i = flyers.length - 1; i >= 0; i--) {
+      const f = flyers[i]!
+      f.vy += GRAVITY
+      f.x += f.vx
+      f.y += f.vy
+      if (f.y + f.h >= floor) {
+        f.y = floor - f.h
+        f.vy = -f.vy * BOUNCE
+        if (Math.abs(f.vy) < 3.2) f.vy = -(3.5 + Math.random() * 3) // weiterhüpfen
+      }
+      f.el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.x * 0.12}deg)`
+      if (f.x < -f.w * 2.5 || f.x > window.innerWidth + f.w * 2.5) {
+        f.el.remove()
+        flyers.splice(i, 1)
+      }
+    }
+    winRaf = requestAnimationFrame(frame)
+  }
+  winRaf = requestAnimationFrame(frame)
+
+  // Dialog erst, wenn die Kaskade schon läuft
+  winTimers.push(setTimeout(() => (showWin.value = true), 4200))
+  // Notbremse, falls doch mal etwas liegen bleibt
+  winTimers.push(setTimeout(stopCascade, 22000))
+}
+
+watch(won, hasWon => {
+  if (hasWon) runWinCascade()
+  else { stopCascade(); showWin.value = false }
+})
 
 /* ---------------- drag & drop ---------------- */
 const drag = reactive({
@@ -479,14 +594,20 @@ onBeforeUnmount(() => {
       <div v-if="toast" class="toast">{{ toast }}</div>
     </Transition>
 
-    <div v-if="won" class="win">
-      <div class="win-card">
-        <img class="win-pup" src="/pups/pup-11.webp" alt="">
-        <h2>Gewonnen! 🎉</h2>
-        <p>{{ moves }} Züge in {{ timeLabel }}</p>
-        <button class="btn btn-primary" @click="startGame">Nochmal spielen</button>
+    <Transition name="pop">
+      <div v-if="showWin" class="win" @click.self="showWin = false">
+        <div class="win-card">
+          <span class="sparkles">✨</span>
+          <img class="win-pup" src="/pups/pup-11.webp" alt="">
+          <h2>Gewonnen! 🎉</h2>
+          <p>{{ moves }} Züge in {{ timeLabel }}</p>
+          <div class="win-actions">
+            <button class="btn btn-primary" @click="startGame">Nochmal spielen</button>
+            <button class="btn btn-ghost" @click="showWin = false">Zuschauen</button>
+          </div>
+        </div>
       </div>
-    </div>
+    </Transition>
   </main>
 </template>
 
@@ -772,6 +893,14 @@ onBeforeUnmount(() => {
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 10px); }
 .toast-enter-active, .toast-leave-active { transition: opacity .25s, transform .25s; }
 
+/* ---------- Gewinn-Kaskade ---------- */
+:global(.win-cascade) {
+  position: fixed; inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 /* ---------- win ---------- */
 .win { position: fixed; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
 .win-card {
@@ -780,7 +909,15 @@ onBeforeUnmount(() => {
   text-align: center; box-shadow: var(--shadow);
 }
 .win-pup { width: 120px; height: 120px; object-fit: contain; }
-.win-card h2 { margin: 6px 0 4px; }
+.win-card h2 { margin: 6px 0 4px; font-size: 30px; }
+.sparkles {
+  display: block; font-size: 26px;
+  animation: twinkle 1.6s ease-in-out infinite;
+}
+@keyframes twinkle { 50% { opacity: .35; transform: scale(.85); } }
+.win-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.pop-enter-active, .pop-leave-active { transition: opacity .35s ease, transform .35s ease; }
+.pop-enter-from, .pop-leave-to { opacity: 0; transform: scale(.92); }
 .win-card p { margin: 0 0 18px; color: var(--ink-soft); font-weight: 700; }
 
 @media (max-width: 720px) {
