@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
+  --rueckkehrleiste: 0px;
   --sat: env(safe-area-inset-top, 0px) / env(safe-area-inset-bottom, 0px);
   --pink-50: #ffeef6;
   --pink-100: #ffd9ec;
@@ -63,7 +64,11 @@ body {
      Die vh-Zeile bleibt als Rueckfall fuer Browser ohne svh. */
   min-height: 100vh;
   min-height: 100svh;
-  padding-top: env(safe-area-inset-top, 0px);
+  /* svh zaehlt Adressleiste und Navigation mit, NICHT aber die schmale
+     Rueckkehr-Leiste ("< Notizen"), die iOS nur beim Oeffnen aus einer
+     anderen App einblendet. Kein Wert meldet sie - deshalb dieser Streifen.
+     Er wird von den Hoehen unten wieder abgezogen. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--rueckkehrleiste, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),
@@ -127,3 +132,9 @@ a { color: inherit; text-decoration: none; }
   transition: scale .15s ease;
 }
 .futter-zeiger.treffer { scale: 1.3; }
+
+/* Nur auf Handybreite: Platz fuer die Rueckkehr-Leiste beim Oeffnen aus
+   einer anderen App. Eine Zeile, falls der Wert nachjustiert werden muss. */
+@media (max-width: 560px) {
+  :root { --rueckkehrleiste: 28px; }
+}
