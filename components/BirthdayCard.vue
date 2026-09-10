@@ -138,6 +138,15 @@ const COMIC_FARBEN = ['#ffd76e', '#ff8fc4', '#7bdff2', '#ffb3d8', '#ffe27a']
 const timers: ReturnType<typeof setTimeout>[] = []
 
 const BOOPS_NOETIG = 30
+const BOSS_NAME = 'Sir Flausch, Wächter der Truhe'
+const REST_LEBEN = 8   // so viel bleibt ihm am Ende - er stirbt nicht, er geht
+
+/** Leben in Prozent: voll bei 0 Boops, knapp ueber null beim letzten. */
+const leben = computed(() =>
+  100 - (boops.value / BOOPS_NOETIG) * (100 - REST_LEBEN)
+)
+// gruen -> gelb -> rot
+const lebenFarbe = computed(() => `hsl(${Math.round(leben.value * 1.25)}, 78%, 48%)`)
 
 // ab welchem Boop welcher Spruch steht
 const REAKTIONEN: [number, string][] = [
@@ -297,6 +306,16 @@ onBeforeUnmount(() => {
 
           <!-- Hund auf der Truhe -->
           <template v-else-if="p.art === 'boop'">
+            <div class="boss">
+              <span class="boss-name">{{ BOSS_NAME }}</span>
+              <div class="hp">
+                <span
+                  class="hp-fuellung"
+                  :style="{ width: `${leben}%`, background: lebenFarbe }"
+                />
+                <span class="hp-segmente" />
+              </div>
+            </div>
             <h2 class="compact" v-html="p.title" />
             <button class="snoot" :class="{ weg: boops >= BOOPS_NOETIG }" @click.stop="boop($event)">
               <img :src="p.img" alt="" draggable="false">
@@ -323,9 +342,6 @@ onBeforeUnmount(() => {
             </button>
             <p class="script hinweis">{{ boopReaktion || '' }}</p>
             <p v-if="!boops" class="script anleitung" v-html="p.text" />
-            <div v-else class="boop-fortschritt">
-              <div class="balken"><span :style="{ width: `${(boops / BOOPS_NOETIG) * 100}%` }" /></div>
-            </div>
           </template>
 
           <!-- Aua: Leckerli geben -->
@@ -510,15 +526,40 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .snoot:active { transform: scale(.94) rotate(-2deg); }
 .snoot.weg { transform: translate(120%, 12%) rotate(14deg); opacity: 0; }
 
-.boop-fortschritt { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.balken {
-  width: 140px; height: 7px; border-radius: 999px;
-  background: rgba(246, 51, 140, .16); overflow: hidden;
+/* Bossleiste über dem Hund */
+.boss { width: 100%; margin: 2px 0 6px; }
+.boss-name {
+  display: block;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: .09em; text-transform: uppercase;
+  color: var(--plum);
+  margin-bottom: 4px;
 }
-.balken span {
-  display: block; height: 100%;
-  background: linear-gradient(90deg, var(--pink-400), var(--pink-500));
-  transition: width .2s ease;
+.hp {
+  position: relative;
+  height: 13px; width: 100%;
+  border-radius: 4px;
+  background: #6b2547;
+  border: 2px solid #4a1026;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .45);
+  overflow: hidden;
+}
+.hp-fuellung {
+  position: absolute; inset: 0 auto 0 0;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.4), transparent 55%);
+  transition: width .28s cubic-bezier(.3, .9, .4, 1), background-color .28s linear;
+}
+/* die typischen Kerben einer Spielleiste */
+.hp-segmente {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 9.6%,
+    rgba(0, 0, 0, .28) 9.6%, rgba(0, 0, 0, .28) 10%
+  );
+  pointer-events: none;
 }
 
 
