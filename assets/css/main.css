@@ -148,5 +148,11 @@ a { color: inherit; text-decoration: none; }
    fensterhoch und damit gar nicht scrollbar - der Fehler blieb stehen.
    Diese Reserve gibt dem Finger etwas zu tun, ohne sichtbare Luecke. */
 @media (max-width: 560px) {
-  :root { --scrollreserve: 120px; }
+  :root {
+    /* Beides zusammen: Der Abstand oben macht die Kopfzeile von Anfang an
+       sichtbar, der Spielraum unten laesst Chrome die Seite beim ersten
+       Wisch endgueltig zurechtruecken. */
+    --kopfabstand: 56px;
+    --scrollreserve: 120px;
+  }
 }
