@@ -28,6 +28,19 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Handy-Browser legen beim Antippen ein blaues Kaestchen ueber Knoepfe -
+   das stoert bei Bildern wie dem Hund auf der Truhe. Fuer die Tastatur
+   bleibt ein sichtbarer Fokusrahmen erhalten. */
+html, button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus:not(:focus-visible) { outline: none; }
+button:focus-visible, a:focus-visible {
+  outline: 3px solid var(--pink-500);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 body {
   margin: 0;
   user-select: none;

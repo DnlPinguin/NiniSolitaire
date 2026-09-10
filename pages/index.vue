@@ -99,6 +99,27 @@ function collectToDeck(): Promise<void> {
 
 const tischIstLeer = () => !tableau.value.some(spalte => spalte.length)
 
+/**
+ * Wachhund: Liegt vier Sekunden nach dem Start immer noch kein Blatt, wurde
+ * die Animationskette unterbrochen - das passiert in In-App-Browsern, die
+ * Zeitgeber anhalten. Dann wird ohne Schau ausgeteilt.
+ *
+ * Er wird bei JEDEM Start neu gestellt. Frueher hing er am Seitenaufbau und
+ * war beim ersten Besuch schon abgelaufen, bevor die Geburtstagskarte weg war.
+ */
+let wachhund: ReturnType<typeof setTimeout> | null = null
+
+function stelleWachhund() {
+  if (wachhund) clearTimeout(wachhund)
+  wachhund = setTimeout(() => {
+    if (!tischIstLeer()) return
+    shuffling.value = false
+    collecting.value = false
+    dealing.value = false
+    newGame()
+  }, 4000)
+}
+
 async function startGame() {
   const id = ++runId
   if (route.query.g) router.replace({ query: {} })
@@ -106,6 +127,7 @@ async function startGame() {
   dealTimers.forEach(clearTimeout)
   dealTimers = []
   dealing.value = false
+  stelleWachhund()
 
   // Wird die Seite im Hintergrund geöffnet (etwa aus einem Messenger heraus),
   // halten manche Browser die Zeitgeber an. Dann sofort austeilen.
@@ -146,6 +168,7 @@ async function startGame() {
 
 onBeforeUnmount(() => {
   stopCascade()
+  if (wachhund) clearTimeout(wachhund)
   runId++
   dealTimers.forEach(clearTimeout)
   document.querySelectorAll('.collect-layer').forEach(el => el.remove())
@@ -203,16 +226,6 @@ function onCardDone() {
 onMounted(() => {
   if (!showCard.value) begin()
 
-  // Letzte Absicherung: liegt nach vier Sekunden immer noch kein Blatt,
-  // wurde die Animationskette unterbrochen - dann ohne Schau austeilen.
-  dealTimers.push(setTimeout(() => {
-    if (!showCard.value && tischIstLeer()) {
-      shuffling.value = false
-      collecting.value = false
-      dealing.value = false
-      newGame()
-    }
-  }, 4000))
 })
 
 /** Puts the current position in a link and copies it. */
