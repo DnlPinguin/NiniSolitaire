@@ -97,6 +97,8 @@ function collectToDeck(): Promise<void> {
     .then(() => { layer.remove() })
 }
 
+const tischIstLeer = () => !tableau.value.some(spalte => spalte.length)
+
 async function startGame() {
   const id = ++runId
   if (route.query.g) router.replace({ query: {} })
@@ -105,28 +107,41 @@ async function startGame() {
   dealTimers = []
   dealing.value = false
 
-  // 1. everything on the table flies back onto the deck
-  collecting.value = true
-  play('recycle')
-  await collectToDeck()
-  if (id !== runId) return
+  // Wird die Seite im Hintergrund geöffnet (etwa aus einem Messenger heraus),
+  // halten manche Browser die Zeitgeber an. Dann sofort austeilen.
+  const ohneSchau = reducedMotion() || (typeof document !== 'undefined' && document.hidden)
 
-  // 2. the deck gets shuffled — the table stays cleared until the new deal,
-  //    otherwise the old layout would flash back while the deck riffles
-  shuffling.value = true
-  play('deal')
-  await wait(reducedMotion() ? 0 : 900)
-  if (id !== runId) return
-  shuffling.value = false
+  try {
+    // 1. everything on the table flies back onto the deck
+    collecting.value = true
+    play('recycle')
+    if (!ohneSchau) await collectToDeck()
+    if (id !== runId) return
 
-  // 3. and dealt back out
-  newGame()
-  collecting.value = false
-  dealKey.value++
-  dealing.value = true
-  await wait(28 * DEAL_STEP + 500)
-  if (id !== runId) return
-  dealing.value = false
+    // 2. the deck gets shuffled — the table stays cleared until the new deal,
+    //    otherwise the old layout would flash back while the deck riffles
+    shuffling.value = true
+    play('deal')
+    await wait(ohneSchau ? 0 : 900)
+    if (id !== runId) return
+    shuffling.value = false
+
+    // 3. and dealt back out
+    newGame()
+    collecting.value = false
+    dealKey.value++
+    dealing.value = !ohneSchau
+    await wait(ohneSchau ? 0 : 28 * DEAL_STEP + 500)
+    if (id !== runId) return
+    dealing.value = false
+  } finally {
+    // Egal was unterwegs schiefgeht: es muss ein spielbares Blatt liegen.
+    if (id === runId) {
+      shuffling.value = false
+      collecting.value = false
+      if (tischIstLeer()) newGame()
+    }
+  }
 }
 
 onBeforeUnmount(() => {
@@ -187,6 +202,17 @@ function onCardDone() {
 
 onMounted(() => {
   if (!showCard.value) begin()
+
+  // Letzte Absicherung: liegt nach vier Sekunden immer noch kein Blatt,
+  // wurde die Animationskette unterbrochen - dann ohne Schau austeilen.
+  dealTimers.push(setTimeout(() => {
+    if (!showCard.value && tischIstLeer()) {
+      shuffling.value = false
+      collecting.value = false
+      dealing.value = false
+      newGame()
+    }
+  }, 4000))
 })
 
 /** Puts the current position in a link and copies it. */
@@ -657,7 +683,7 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((100dvh - 210px) / 5.9)
+    calc((100svh - 210px) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);

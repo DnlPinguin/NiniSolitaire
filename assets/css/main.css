@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@600&family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
   --pink-50: #ffeef6;
@@ -39,7 +39,11 @@ body {
 }
 
 .app {
-  height: 100dvh;
+  /* Fest am Bildfenster verankert. In-App-Browsern (WhatsApp, Instagram)
+     rutscht eine bloss hohe Seite beim Ein- und Ausblenden der Adressleiste
+     nach oben weg - der Kopfbereich waere dann nicht mehr erreichbar. */
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),

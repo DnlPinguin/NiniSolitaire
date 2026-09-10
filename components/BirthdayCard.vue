@@ -452,9 +452,20 @@ onBeforeUnmount(() => {
 /* ---------- Seiten ---------- */
 .sheet {
   position: absolute; inset: 0;
-  border-radius: 22px;
-  background: linear-gradient(170deg, #fffdfe, #fff1f8);
-  box-shadow: 0 22px 50px rgba(214, 51, 132, .28);
+  border-radius: 18px;
+  /* Kartonanmutung: warmes Cremeweiss, feine Faserung aus mehreren sehr
+     schwachen Verlaeufen, dazu eine angedeutete Papierkante. */
+  background-color: #fffaf3;
+  background-image:
+    repeating-linear-gradient(94deg,  rgba(150, 110, 90, .035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(3deg,   rgba(150, 110, 90, .028) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(48deg,  rgba(120, 90, 70, .018) 0 2px, transparent 2px 7px),
+    radial-gradient(120% 90% at 50% 0%, #fffdf8, #fdf1e6 78%, #f7e6dc);
+  box-shadow:
+    0 22px 50px rgba(214, 51, 132, .26),
+    inset 0 0 0 1px rgba(255, 255, 255, .7),
+    inset 0 -14px 22px rgba(176, 132, 104, .10),
+    inset 0 14px 20px rgba(255, 255, 255, .5);
 }
 .backdrop { z-index: 0; }
 .page {
@@ -470,14 +481,24 @@ onBeforeUnmount(() => {
 .pup { width: 40%; max-width: 120px; object-fit: contain; }
 .page h2 {
   margin: 8px 0 0;
-  font-family: 'Baloo 2', sans-serif;
-  font-size: clamp(18px, 5.2vw, 23px); line-height: 1.15;
-  color: var(--pink-600);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: clamp(27px, 7.4vw, 33px); line-height: 1.08;
+  color: #b3245f;
+  transform: rotate(-1.2deg);
 }
-h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
-.page .script { margin: 6px 0 0; font-size: 16px; line-height: 1.3; color: var(--pink-400); }
-.anleitung { font-size: 17px !important; }
-.hinweis { min-height: 22px; font-size: 18px !important; color: var(--pink-500) !important; }
+h2.compact { font-size: clamp(24px, 6.6vw, 29px); }
+.page .script {
+  margin: 5px 0 0;
+  font-size: 19px; line-height: 1.25;
+  color: #c2557f;
+  font-weight: 500;
+}
+.anleitung { font-size: 20px !important; }
+.hinweis {
+  min-height: 24px; font-size: 21px !important;
+  color: #b3245f !important; font-weight: 600;
+}
 
 /* ---------- umgeknicktes Eck ---------- */
 .eselsohr {
@@ -506,11 +527,12 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   display: flex; flex-direction: column; gap: 9px; text-align: left;
 }
 .facts li {
-  display: flex; align-items: flex-start; gap: 9px;
-  font-size: 13px; line-height: 1.35;
-  color: var(--ink-soft); font-weight: 600;
+  display: flex; align-items: flex-start; gap: 8px;
+  font-family: 'Caveat', cursive;
+  font-size: 18px; line-height: 1.22;
+  color: #8a5a72; font-weight: 500;
 }
-.facts :deep(b) { color: var(--pink-600); font-weight: 800; }
+.facts :deep(b) { color: #b3245f; font-weight: 700; }
 .fact-icon { font-size: 16px; line-height: 1.1; flex: none; }
 
 /* ---------- Boop ---------- */
