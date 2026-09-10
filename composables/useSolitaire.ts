@@ -96,7 +96,7 @@ export function useSolitaire(options: SolitaireOptions = {}) {
   const selection = ref<Source | null>(null)
   const hint = ref<Hint | null>(null)
   const hintsLeft = ref(3)
-  /** 1 = Klondike draw-one, 3 = draw-three (the classic three-card version). */
+  /** Es wird immer zu dritt gezogen (die klassische Dreierziehung). */
   const drawCount = ref<1 | 3>(3)
   /** How many cards arrived on the last draw, so the view can animate them. */
   const lastDrawn = ref(0)
@@ -368,7 +368,7 @@ export function useSolitaire(options: SolitaireOptions = {}) {
     const bytes = codeToBytes(code)
     if (!bytes || bytes.length < 15 || bytes[0] !== 1) return false
 
-    const draw = bytes[1] === 3 ? 3 : 1
+    // Ziehen ist fest auf drei; aeltere Teilen-Links werden angepasst.
     const lengths = bytes.slice(2, 15)
     const total = lengths.reduce((a, b) => a + b, 0)
     if (total !== 52 || bytes.length !== 15 + 52) return false
@@ -394,7 +394,6 @@ export function useSolitaire(options: SolitaireOptions = {}) {
     waste.value = piles[1]!
     foundations.value = piles.slice(2, 6)
     tableau.value = piles.slice(6, 13)
-    drawCount.value = draw as 1 | 3
     moves.value = 0
     seconds.value = 0
     selection.value = null

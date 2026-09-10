@@ -3,22 +3,12 @@ import { RANK_LABELS, isRed, pupSrcFor, type Card, type Source, type Suit } from
 
 useHead({ title: 'Solitaire · Ninis Spieleecke' })
 
-/* ------------------------------------------------------------------
- * FEHLERSUCHE: Aufbau stufenweise zuschalten.
- *
- *   1 = nur Kopfleiste und Fussleiste
- *   2 = zusaetzlich das Spielfeld
- *   3 = zusaetzlich die Geburtstagskarte (also alles)
- *
- * Zum Weiterschalten einfach die Zahl erhoehen.
- * ------------------------------------------------------------------ */
-const STUFE = 3
 
 const { play, muted, toggleMute } = useSounds()
 
 const {
   stock, waste, foundations, tableau, moves, timeLabel, won,
-  hintsLeft, canUndo, drawCount, lastDrawn, setDrawCount, shareCode, loadCode,
+  hintsLeft, canUndo, drawCount, lastDrawn, shareCode, loadCode,
   newGame, drawFromStock, select, clickEmpty, sendToFoundation, isSelected,
   tryMove, canMove, undo, useHint, isHinted, pileFor
 } = useSolitaire({ onEvent: play })
@@ -186,11 +176,6 @@ onBeforeUnmount(() => {
   document.querySelectorAll('.collect-layer').forEach(el => el.remove())
 })
 
-function chooseDraw(n: 1 | 3) {
-  if (drawCount.value === n) return
-  setDrawCount(n)
-  startGame()
-}
 
 const FOUNDATION_SUITS = ['♥', '♠', '♦', '♣']
 const route = useRoute()
@@ -205,7 +190,7 @@ const cardSeen = useCookie<string | null>('nini-geburtstagskarte', {
   sameSite: 'lax'
 })
 // Geteilte Links führen direkt ins Spiel, ohne Karte.
-const showCard = ref(STUFE >= 3 && !cardSeen.value && !route.query.g)
+const showCard = ref(!cardSeen.value && !route.query.g)
 
 function begin() {
   const code = route.query.g
@@ -521,31 +506,16 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="container">
-    <header class="topbar">
-      <!-- Kein Hub mehr — statt "Zurück" steht hier der Schriftzug.
-           Zum Reaktivieren des Hubs:
-           <NuxtLink to="/hub" class="back">← Zurück</NuxtLink> -->
-      <span class="brandmark">Ninis <b>Spieleecke</b> 💖</span>
-      <div class="stat-group">
-        <div class="stat seg">
-          <span>Ziehen</span>
-          <div class="seg-btns">
-            <button :class="{ on: drawCount === 1 }" @click="chooseDraw(1)">1</button>
-            <button :class="{ on: drawCount === 3 }" @click="chooseDraw(3)">3</button>
-          </div>
-        </div>
-        <div class="stat"><span>Züge</span><b>{{ moves }}</b></div>
-        <div class="stat"><span>Zeit</span><b>{{ timeLabel }}</b></div>
-        <button class="sound" :title="muted ? 'Ton an' : 'Ton aus'" @click="toggleMute">
-          {{ muted ? '🔇' : '🔊' }}
-        </button>
-        <button class="sound card-again" title="Geburtstagskarte nochmal ansehen" @click="replayCard">
-          💌
-        </button>
-      </div>
-    </header>
+    <div class="knopfleiste">
+      <button class="sound" :title="muted ? 'Ton an' : 'Ton aus'" @click="toggleMute">
+        {{ muted ? '🔇' : '🔊' }}
+      </button>
+      <button class="sound" title="Geburtstagskarte nochmal ansehen" @click="replayCard">
+        💌
+      </button>
+    </div>
 
-    <section v-if="STUFE >= 2" ref="boardRef" class="board" :class="{ collecting }">
+    <section ref="boardRef" class="board" :class="{ collecting }">
       <div class="top-row">
         <div class="slot stock" :class="{ shuffling }">
           <template v-if="shuffling">
@@ -689,7 +659,7 @@ onBeforeUnmount(() => {
       </button>
     </nav>
 
-    <BirthdayCard v-if="STUFE >= 3 && showCard" @done="onCardDone" />
+    <BirthdayCard v-if="showCard" @done="onCardDone" />
 
     <Transition name="toast">
       <div v-if="toast" class="toast">{{ toast }}</div>
@@ -755,45 +725,20 @@ onBeforeUnmount(() => {
   );
 }
 
-/* ---------- header ---------- */
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px 10px;
-  margin-bottom: 12px;
+/* ---------- Knopfleiste oben rechts ---------- */
+.knopfleiste {
+  display: flex; justify-content: flex-end; gap: 7px;
+  margin-bottom: 10px;
 }
-.back {
-  justify-self: start;
-  background: rgba(255,255,255,.8);
-  color: var(--pink-500);
-  font-weight: 800; font-size: 15px;
-  padding: 12px 22px; border-radius: 999px;
-  box-shadow: var(--shadow);
-}
-.back:hover { background: #fff; }
-.brandmark {
-  align-self: center;
-  font-family: 'Baloo 2', sans-serif; font-weight: 600;
-  font-size: 15px; color: var(--pink-400); white-space: nowrap;
-}
-.brandmark b { color: var(--pink-500); font-weight: 800; }
-.stat-group { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: stretch; }
-.stat {
-  min-width: 60px; text-align: center;
-  background: rgba(255,255,255,.8);
-  border-radius: 14px; padding: 5px 9px;
-  box-shadow: var(--shadow);
-  display: flex; flex-direction: column; justify-content: center; gap: 1px;
-}
-.stat span { display: block; font-size: 10px; font-weight: 800; letter-spacing: .04em; color: var(--pink-400); }
-.stat b { font-family: 'Baloo 2', sans-serif; font-size: 17px; line-height: 1.1; color: var(--pink-600); }
 .sound {
-  width: 38px; border: 0; cursor: pointer; font-size: 17px;
+  width: 38px; height: 38px;
+  border: 0; cursor: pointer; font-size: 17px;
   background: rgba(255,255,255,.8);
   border-radius: 14px; box-shadow: var(--shadow);
   transition: transform .14s;
+  touch-action: manipulation;
 }
 .sound:hover { transform: translateY(-2px); }
-.card-again { font-size: 16px; }
 
 /* ---------- board ---------- */
 .board { position: relative; overflow: visible; }
@@ -921,13 +866,9 @@ onBeforeUnmount(() => {
   animation-delay: calc(var(--d) * 110ms);
 }
 @keyframes draw-flip {
-  from {
-    transform:
-      translateX(calc(-1 * (var(--card-w) + var(--gap) + var(--fan) * var(--d))))
-      rotateY(180deg) scale(.97);
-  }
-  60% { transform: translateX(0) rotateY(0deg) scale(1.04); }
-  to { transform: none; }
+  from { transform: rotateY(180deg) scale(.97); }
+  60%  { transform: rotateY(0deg) scale(1.04); }
+  to   { transform: none; }
 }
 
 /* Die Rückseite liegt oben, bis die Karte über die Kante gedreht ist. */
@@ -952,58 +893,7 @@ onBeforeUnmount(() => {
   100% { opacity: 0; }
 }
 
-/* ---------- draw-mode switch (inline in the header) ---------- */
-.stat.seg { min-width: 0; padding: 5px 7px; }
-.seg-btns { display: flex; gap: 3px; }
-.seg-btns button {
-  border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 13px;
-  width: 24px; height: 21px; padding: 0; border-radius: 8px;
-  background: rgba(246,51,140,.1); color: var(--pink-500);
-  transition: .14s;
-}
-.seg-btns button:hover { background: rgba(246,51,140,.2); }
-.seg-btns button.on {
-  background: linear-gradient(180deg, var(--pink-400), var(--pink-500));
-  color: #fff;
-}
-
-/* ---------- old full-width switch (unused) ---------- */
-.mode-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 16px; }
-.mode-label { font-weight: 800; font-size: 13px; color: var(--ink-soft); }
-.mode {
-  border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 13px;
-  padding: 8px 16px; border-radius: 999px;
-  background: rgba(255,255,255,.72); color: var(--pink-500); box-shadow: var(--shadow);
-  transition: .15s;
-}
-.mode:hover { background: #fff; }
-.mode.on { background: linear-gradient(180deg, var(--pink-400), var(--pink-500)); color: #fff; }
-
-@media (prefers-reduced-motion: reduce) {
-  .stacked.dealt, :deep(.card.drawn), .stock.shuffling .half,
-  .stock.shuffling .flick, .stock.shuffling :deep(.card) { animation: none; }
-}
-
-/* ---------- drag ghost ---------- */
-.ghost { position: fixed; z-index: 60; pointer-events: none; width: var(--card-w); }
-.ghost-card { position: absolute; left: 0; filter: drop-shadow(0 12px 20px rgba(214,51,132,.4)); }
-.ghost-card :deep(.card) { transform: rotate(-3deg) scale(1.04); }
-
-/* ---------- decorations ---------- */
-.decor { position: relative; height: 120px; pointer-events: none; text-align: center; }
-.d-heart { display: block; font-size: 34px; color: var(--pink-400); margin-top: 26px; }
-.quote { font-size: 24px; color: var(--pink-400); margin: 6px 0 0; line-height: 1.35; }
-.paw-mark {
-  position: absolute; left: 0; bottom: -4px;
-  font-size: 120px; opacity: .16; filter: grayscale(1) sepia(1) hue-rotate(285deg) saturate(4);
-}
-.cheer {
-  position: absolute; right: 8px; bottom: 4px;
-  font-size: 22px; color: var(--pink-400);
-  transform: rotate(-8deg); line-height: 1.2; margin: 0;
-}
-
-/* ---------- action bar ---------- */
+/* ---------- Fussleiste ---------- */
 .actions {
   /* sticky statt fixed: bleibt beim Scrollen sichtbar, haengt aber im
      Textfluss - so kann sie nicht neben dem sichtbaren Bereich landen. */
@@ -1090,11 +980,6 @@ onBeforeUnmount(() => {
     --stack: calc(var(--card-w) * 0.42);
     padding-inline: 14px;
   }
-  .back { padding: 10px 16px; font-size: 14px; }
-  .stat { min-width: 62px; padding: 6px 9px; }
-  .stat b { font-size: 17px; }
-  .brandmark { font-size: 14px; }
-  .sound { width: 34px; font-size: 15px; }
       .draw-hint { font-size: 10px; }
   .draw-hint i { font-size: 16px; }
   .decor { height: 100px; }

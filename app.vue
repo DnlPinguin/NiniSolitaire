@@ -1,34 +1,4 @@
 <script setup lang="ts">
-/* Messanzeige, nur mit ?debug=1 in der Adresse sichtbar. */
-const zeigeWerte = ref(false)
-const werte = ref('')
-
-function werteSammeln() {
-  const d = document.documentElement
-  const vv = window.visualViewport
-  werte.value = [
-    `innerHeight   ${window.innerHeight}`,
-    `visualVP h ${Math.round(vv?.height ?? -1)}  offsetTop ${Math.round(vv?.offsetTop ?? -1)}`,
-    `clientHeight  ${d.clientHeight}`,
-    `app top/bot   ${Math.round(document.querySelector('.app')?.getBoundingClientRect().top ?? 0)} / ${Math.round(document.querySelector('.app')?.getBoundingClientRect().bottom ?? 0)}`,
-    `kopf top      ${Math.round(document.querySelector('.topbar')?.getBoundingClientRect().top ?? -999)}`,
-    `body          ${Math.round(document.body.getBoundingClientRect().height)}`,
-    `scrollHeight  ${d.scrollHeight}   clientHeight ${d.clientHeight}`,
-    `scrollY       ${Math.round(window.scrollY)}`,
-    `safe top/bot  ${getComputedStyle(d).getPropertyValue('--sat') || '?'}`,
-    `screen        ${window.screen?.height ?? -1}  verdeckt ${(window.screen?.height ?? 0) - window.innerHeight}`,
-    `kopfabstand   ${getComputedStyle(d).getPropertyValue('--kopfabstand').trim() || '-'}`
-  ].join('\n')
-}
-
-onMounted(() => {
-  if (typeof location !== 'undefined' && location.search.includes('debug=1')) {
-    zeigeWerte.value = true
-    werteSammeln()
-    setInterval(werteSammeln, 400)
-  }
-})
-
 /*
  * Tab-Bar stillgelegt (2026-09-10): Es gibt nur noch Solitaire, also führt
  * keine Navigation mehr irgendwohin. Zum Reaktivieren zusammen mit dem
@@ -48,7 +18,6 @@ onMounted(() => {
 
 <template>
   <div class="app no-tabs">
-    <pre v-if="zeigeWerte" class="messwerte">{{ werte }}</pre>
     <NuxtPage />
 
 <!--
@@ -84,14 +53,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Messanzeige fuer die Fehlersuche auf echten Geraeten */
-.messwerte {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
-  margin: 0; padding: 6px 8px;
-  background: rgba(0, 0, 0, .82); color: #7CFFB2;
-  font: 600 11px/1.35 ui-monospace, monospace;
-  white-space: pre; pointer-events: none;
-}
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
