@@ -9,7 +9,7 @@ const {
   stock, waste, foundations, tableau, moves, timeLabel, won,
   hintsLeft, canUndo, drawCount, lastDrawn, setDrawCount, shareCode, loadCode,
   newGame, drawFromStock, select, clickEmpty, sendToFoundation, isSelected,
-  tryMove, undo, useHint, isHinted, pileFor
+  tryMove, canMove, undo, useHint, isHinted, pileFor
 } = useSolitaire({ onEvent: play })
 
 /* ---------------- shuffle + deal ---------------- */
@@ -385,23 +385,61 @@ function onPointerMove(e: PointerEvent) {
   drag.y = e.clientY
 }
 
+/**
+ * Sucht das Ziel für die gezogene Karte: nicht der Punkt unter dem Finger,
+ * sondern das Feld mit der größten Überlappung mit der Karte selbst. Erlaubte
+ * Ziele haben Vorrang - liegt die Karte über zwei Spalten und passt nur auf
+ * eine, gewinnt diese.
+ */
+function zielFuerAbwurf(src: Source): { type: 'foundation' | 'tableau'; index: number } | null {
+  const karte = document.querySelector('.ghost .card') as HTMLElement | null
+  if (!karte) return null
+  const r = karte.getBoundingClientRect()
+
+  const treffer: { type: 'foundation' | 'tableau'; index: number; flaeche: number; erlaubt: boolean }[] = []
+  for (const zone of Array.from(document.querySelectorAll('[data-drop-type]')) as HTMLElement[]) {
+    const z = zone.getBoundingClientRect()
+    const breite = Math.min(r.right, z.right) - Math.max(r.left, z.left)
+    const hoehe = Math.min(r.bottom, z.bottom) - Math.max(r.top, z.top)
+    if (breite <= 0 || hoehe <= 0) continue
+    const type = zone.dataset.dropType as 'foundation' | 'tableau'
+    const index = Number(zone.dataset.dropIndex)
+    treffer.push({ type, index, flaeche: breite * hoehe, erlaubt: canMove(src, { type, index }) })
+  }
+  if (!treffer.length) return null
+
+  const erlaubte = treffer.filter(t => t.erlaubt)
+  const auswahl = (erlaubte.length ? erlaubte : treffer).sort((a, b) => b.flaeche - a.flaeche)[0]!
+  return { type: auswahl.type, index: auswahl.index }
+}
+
+// Der Browser liefert 'dblclick' bei Touch und bei minimaler Mausbewegung
+// unzuverlässig - deshalb erkennen wir den Doppeltipp selbst.
+let letzterTipp = { zeit: 0, karte: '' }
+const DOPPELTIPP_MS = 420
+
 function onPointerUp(e: PointerEvent) {
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
   const src = drag.src
 
   if (src && drag.moved) {
-    // The ghost is pointer-events:none, so this hits the pile underneath.
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
-    const zone = el?.closest('[data-drop-type]') as HTMLElement | null
-    if (zone) {
-      const type = zone.dataset.dropType as 'foundation' | 'tableau'
-      if (!tryMove(src, type, Number(zone.dataset.dropIndex))) play('invalid')
-    } else {
-      play('invalid')
-    }
+    const ziel = zielFuerAbwurf(src)
+    if (!ziel || !tryMove(src, ziel.type, ziel.index)) play('invalid')
   } else if (src) {
-    select(src) // a plain click, not a drag
+    const kennung = `${src.type}-${src.index}-${src.cardIndex}`
+    const jetzt = performance.now()
+    const istDoppel =
+      kennung === letzterTipp.karte && jetzt - letzterTipp.zeit < DOPPELTIPP_MS
+
+    if (istDoppel) {
+      letzterTipp = { zeit: 0, karte: '' }
+      // Zweiter Tipp: ab auf die Ablage, wenn die Karte dort passt.
+      if (!sendToFoundation(src)) select(src)
+    } else {
+      letzterTipp = { zeit: jetzt, karte: kennung }
+      select(src)
+    }
   }
 
   drag.active = false
@@ -478,7 +516,6 @@ onBeforeUnmount(() => {
                 :dragging="entry.top && isDragged('waste', 0, wasteTopIndex)"
                 :class="{ idle: !entry.top }"
                 @pointerdown="entry.top && onPointerDown($event, { type: 'waste', index: 0, cardIndex: wasteTopIndex })"
-                @dblclick="entry.top && sendToFoundation({ type: 'waste', index: 0, cardIndex: wasteTopIndex })"
               />
             </div>
           </template>
@@ -534,7 +571,6 @@ onBeforeUnmount(() => {
               :hinted="isHinted('tableau', i, ci)"
               :dragging="isDragged('tableau', i, ci)"
               @pointerdown="onPointerDown($event, { type: 'tableau', index: i, cardIndex: ci })"
-              @dblclick.stop="sendToFoundation({ type: 'tableau', index: i, cardIndex: ci })"
             />
           </div>
         </div>
