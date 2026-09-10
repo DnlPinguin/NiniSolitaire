@@ -57,11 +57,12 @@ body {
 }
 
 .app {
-  /* Bewusst das schlichte, STABILE 100vh: Auf iOS aendert sich dieser Wert
-     nicht, wenn Safari seine Leisten ein- oder ausblendet. Genau diese Ruhe
-     hat vorher gefehlt - jede dynamische Hoehe (dvh, svh, per JavaScript
-     gemessen) liess die Seite beim Oeffnen aus einer anderen App springen. */
+  /* 100vh bedeutet auf iOS die Hoehe OHNE Safaris Leisten - damit ist die
+     Seite immer um Adressleiste und Navigation zu hoch. svh ist die Hoehe
+     MIT eingeblendeten Leisten, also der Wert, der immer passt.
+     Die vh-Zeile bleibt als Rueckfall fuer Browser ohne svh. */
   min-height: 100vh;
+  min-height: 100svh;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
