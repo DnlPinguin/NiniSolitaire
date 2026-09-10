@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test 1 - ganz normal</title>
+<style>
+  html, body { margin: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #ffd9ec; }
+  .oben { background: #0a7f3f; color: #fff; padding: 14px 12px; font-weight: 800; font-size: 17px; }
+  .text { padding: 16px 12px; color: #6b2547; line-height: 1.5; }
+  .text b { display: block; font-size: 18px; margin-bottom: 6px; }
+  pre { margin: 0; padding: 12px; background: #17141c; color: #7CFFB2;
+        font: 600 13px/1.6 ui-monospace, monospace; white-space: pre; }
+  .unten { background: #7a1246; color: #fff; padding: 14px 12px; font-weight: 800; }
+</style>
+</head>
+<body>
+  <div class="oben">▲ OBEN — siehst du diesen grünen Balken?</div>
+  <div class="text">
+    <b>Test 1 - ganz normal</b>
+    Viewport-Tag dieser Seite:<br>
+    <code style="font-size:12px">width=device-width, initial-scale=1</code>
+  </div>
+  <pre id="w"></pre>
+  <div class="unten">▼ UNTEN</div>
+  <script>
+    function zeig() {
+      document.getElementById('w').textContent = [
+        'innerHeight   ' + window.innerHeight,
+        'screen.height ' + window.screen.height,
+        'clientHeight  ' + document.documentElement.clientHeight,
+        'scrollY       ' + Math.round(window.scrollY),
+        'body-Hoehe    ' + Math.round(document.body.getBoundingClientRect().height)
+      ].join('\n');
+    }
+    zeig();
+    setInterval(zeig, 400);
+  </script>
+</body>
+</html>
