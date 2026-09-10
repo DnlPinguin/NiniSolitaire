@@ -711,17 +711,23 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((100svh - 210px) / 5.9)
+    calc((100svh - 210px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
   --fan: calc(var(--card-w) * 0.24);
   max-width: 900px;
   padding: 12px 16px 20px;
-  /* Spalte, damit die Leiste unten sitzt, auch wenn der Inhalt kurz ist. */
+  /* Spalte, damit die Leiste unten sitzt, auch wenn der Inhalt kurz ist.
+     Die Sicherheitsabstaende muessen abgezogen werden - sonst wird die Seite
+     genau um den Notch-Abstand zu hoch und der Browser scrollt von selbst. */
   display: flex;
   flex-direction: column;
-  min-height: calc(100svh - 32px);
+  min-height: calc(
+    100svh - 32px
+    - env(safe-area-inset-top, 0px)
+    - env(safe-area-inset-bottom, 0px)
+  );
 }
 
 /* ---------- header ---------- */
