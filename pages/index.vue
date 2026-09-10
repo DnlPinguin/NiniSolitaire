@@ -167,6 +167,7 @@ async function startGame() {
 }
 
 onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', beiSichtbarkeit)
   stopCascade()
   if (wachhund) clearTimeout(wachhund)
   runId++
@@ -223,9 +224,23 @@ function onCardDone() {
   begin()
 }
 
-onMounted(() => {
-  if (!showCard.value) begin()
+/**
+ * In-App-Browser laden die Seite oft im Hintergrund und frieren dabei
+ * Zeitgeber ein. Wird sie dann sichtbar und es liegt immer noch kein Blatt,
+ * wird sofort ausgeteilt - sonst bliebe der Tisch dauerhaft leer.
+ */
+function beiSichtbarkeit() {
+  if (document.hidden || showCard.value || won.value) return
+  if (!tischIstLeer()) return
+  shuffling.value = false
+  collecting.value = false
+  dealing.value = false
+  newGame()
+}
 
+onMounted(() => {
+  document.addEventListener('visibilitychange', beiSichtbarkeit)
+  if (!showCard.value) begin()
 })
 
 /** Puts the current position in a link and copies it. */
