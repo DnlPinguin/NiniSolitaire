@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
+  /* Auf dem Handy oben Platz freihalten, siehe pages/index.vue */
+  --kopfschutz: 0px;
   --sat: env(safe-area-inset-top, 0px) / env(safe-area-inset-bottom, 0px);
   --pink-50: #ffeef6;
   --pink-100: #ffd9ec;
@@ -60,7 +62,6 @@ body {
   /* --vvh ist der wirklich sichtbare Ausschnitt, gemessen in app.vue.
      --vvo gleicht aus, wenn Safari diesen Ausschnitt verschiebt. */
   min-height: var(--vvh, 100svh);
-  transform: translateY(var(--vvo, 0px));
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
@@ -124,3 +125,7 @@ a { color: inherit; text-decoration: none; }
   transition: scale .15s ease;
 }
 .futter-zeiger.treffer { scale: 1.3; }
+
+@media (max-width: 560px) {
+  :root { --kopfschutz: 64px; }
+}
