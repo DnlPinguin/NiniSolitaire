@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
+  --sat: env(safe-area-inset-top, 0px) / env(safe-area-inset-bottom, 0px);
   --pink-50: #ffeef6;
   --pink-100: #ffd9ec;
   --pink-200: #ffc2e0;

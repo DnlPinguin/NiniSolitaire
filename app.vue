@@ -23,14 +23,59 @@ function messeMehrfach() {
   messungen = [0, 80, 300, 800, 1500, 2500].map(ms => setTimeout(messeSichtfeld, ms))
 }
 
+/**
+ * Oeffnet iOS einen Link aus einer anderen App (WhatsApp, Notizen), zeigt
+ * Safari oben zusaetzlich eine Rueckkehr-Leiste. Verschwindet die kurz nach
+ * dem Laden, scrollt Safari die Seite dabei von selbst nach unten - der
+ * Inhalt "rutscht hoch". Deshalb halten wir sie die ersten Sekunden oben.
+ */
+let haltenBis = 0
+function haltOben() {
+  if (performance.now() > haltenBis) return
+  if (window.scrollY !== 0) window.scrollTo(0, 0)
+  requestAnimationFrame(haltOben)
+}
+function obenHalten(dauer = 3500) {
+  const lief = performance.now() <= haltenBis
+  haltenBis = performance.now() + dauer
+  if (!lief) haltOben()
+}
+
 onMounted(() => {
   messeMehrfach()
+  obenHalten()
   const vv = window.visualViewport
   vv?.addEventListener('resize', messeSichtfeld)
   window.addEventListener('resize', messeSichtfeld)
   window.addEventListener('orientationchange', messeMehrfach)
-  window.addEventListener('pageshow', messeMehrfach)
-  document.addEventListener('visibilitychange', messeMehrfach)
+  window.addEventListener('pageshow', () => { messeMehrfach(); obenHalten() })
+  document.addEventListener('visibilitychange', () => { messeMehrfach(); obenHalten(1500) })
+})
+
+/* Messanzeige, nur mit ?debug=1 in der Adresse sichtbar. */
+const zeigeWerte = ref(false)
+const werte = ref('')
+
+function werteSammeln() {
+  const d = document.documentElement
+  const vv = window.visualViewport
+  werte.value = [
+    `innerHeight   ${window.innerHeight}`,
+    `visualVP      ${Math.round(vv?.height ?? -1)}  offset ${Math.round(vv?.offsetTop ?? -1)}`,
+    `--vvh         ${getComputedStyle(d).getPropertyValue('--vvh').trim() || '-'}`,
+    `body          ${Math.round(document.body.getBoundingClientRect().height)}`,
+    `scrollHeight  ${d.scrollHeight}   clientHeight ${d.clientHeight}`,
+    `scrollY       ${Math.round(window.scrollY)}`,
+    `safe top/bot  ${getComputedStyle(d).getPropertyValue('--sat') || '?'}`
+  ].join('\n')
+}
+
+onMounted(() => {
+  if (typeof location !== 'undefined' && location.search.includes('debug=1')) {
+    zeigeWerte.value = true
+    werteSammeln()
+    setInterval(werteSammeln, 400)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -62,6 +107,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app no-tabs">
+    <pre v-if="zeigeWerte" class="messwerte">{{ werte }}</pre>
     <NuxtPage />
 
 <!--
@@ -97,6 +143,15 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Messanzeige fuer die Fehlersuche auf echten Geraeten */
+.messwerte {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  margin: 0; padding: 6px 8px;
+  background: rgba(0, 0, 0, .82); color: #7CFFB2;
+  font: 600 11px/1.35 ui-monospace, monospace;
+  white-space: pre; pointer-events: none;
+}
+
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   height: var(--nav-h);
