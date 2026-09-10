@@ -616,12 +616,18 @@ onBeforeUnmount(() => {
   /* Seven columns always fit the window, so nothing ever needs clipping.
      Everything else scales off the card width. */
   --gap: 12px;
-  --card-w: min(92px, calc((100vw - 36px - var(--gap) * 6) / 7));
+  /* Die Karten müssen in Breite UND Höhe passen — es wird nicht gescrollt,
+     abgeschnittene Karten wären sonst unerreichbar. */
+  --card-w: min(
+    92px,
+    calc((100vw - 36px - var(--gap) * 6) / 7),
+    calc((100dvh - 210px) / 5.9)
+  );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
   --fan: calc(var(--card-w) * 0.24);
   max-width: 900px;
-  padding: 12px 16px 108px;
+  padding: 12px 16px 96px;
 }
 
 /* ---------- header ---------- */
@@ -674,6 +680,7 @@ onBeforeUnmount(() => {
 .fanned :deep(.card.idle) { cursor: default; }
 .empty {
   width: 100%; height: 100%;
+  touch-action: manipulation;
   border: 2px dashed rgba(255,255,255,.95);
   border-radius: 12px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -779,20 +786,43 @@ onBeforeUnmount(() => {
   to { transform: none; opacity: 1; }
 }
 
-/* ---------- a drawn card is pulled off the deck ---------- */
+/* ---------- eine gezogene Karte wird vom Stapel gedreht ----------
+   Sie startet verdeckt auf dem Deck und dreht sich unterwegs um: bis zur
+   Hälfte liegt die Rückseite oben, danach das Kartenbild. */
 .fanned { transition: left .24s cubic-bezier(.3,.8,.4,1); }
+
 :deep(.card.drawn) {
-  animation: draw-in .3s cubic-bezier(.25,.9,.35,1) backwards;
-  animation-delay: calc(var(--d) * 90ms);
+  animation: draw-flip .46s cubic-bezier(.32,.7,.35,1) backwards;
+  animation-delay: calc(var(--d) * 110ms);
 }
-@keyframes draw-in {
+@keyframes draw-flip {
   from {
     transform:
       translateX(calc(-1 * (var(--card-w) + var(--gap) + var(--fan) * var(--d))))
-      rotateY(72deg) scale(.96);
-    opacity: .5;
+      rotateY(180deg) scale(.97);
   }
-  to { transform: none; opacity: 1; }
+  60% { transform: translateX(0) rotateY(0deg) scale(1.04); }
+  to { transform: none; }
+}
+
+/* Die Rückseite liegt oben, bis die Karte über die Kante gedreht ist. */
+:deep(.card.drawn)::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 3;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 22% 26%, rgba(255,255,255,.22) 0 12%, transparent 13%),
+    radial-gradient(circle at 78% 72%, rgba(255,255,255,.22) 0 12%, transparent 13%),
+    linear-gradient(160deg, #ff7ab8, var(--pink-500));
+  animation: draw-face .46s steps(1, end) backwards;
+  animation-delay: calc(var(--d) * 110ms);
+}
+@keyframes draw-face {
+  0%   { opacity: 1; }
+  50%  { opacity: 1; }
+  51%  { opacity: 0; }
+  100% { opacity: 0; }
 }
 
 /* ---------- draw-mode switch (inline in the header) ---------- */
@@ -863,6 +893,7 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow);
 }
 .action {
+  touch-action: manipulation;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   background: none; border: 0; font: inherit; cursor: pointer;
   font-size: 13px; font-weight: 800; color: var(--pink-500);

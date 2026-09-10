@@ -80,7 +80,8 @@ const pupSrc = computed(() => pupSrcFor(props.card))
 
 .card.selected { outline: 3px solid var(--pink-600); outline-offset: -3px; transform: translateY(-5px); }
 .card.hinted { animation: pulse 1s ease-in-out infinite; }
-.card.dragging { opacity: .32; }
+/* Beim Ziehen liegt die Karte in der Hand — am alten Platz bleibt nichts zurück. */
+.card.dragging { visibility: hidden; }
 
 @keyframes pulse {
   0%, 100% { box-shadow: 0 6px 14px rgba(214,51,132,.22); }
