@@ -157,7 +157,7 @@ function finish() {
         <!-- Deckel -->
         <div class="cover" :style="{ zIndex: pages.length + 2 }" @click="open">
           <div class="face front">
-            <span class="seal">💖</span>
+            <img class="party-dog" src="/party-dog.webp" alt="" draggable="false">
             <h3>Für Nini</h3>
             <span class="script hint">Tippen zum Öffnen ♡</span>
             <span class="ribbon" />
@@ -282,16 +282,26 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   background: linear-gradient(160deg, #ffd9ec, #ffc2e0);
   box-shadow: inset 0 0 40px rgba(214, 51, 132, .12);
 }
-.seal { font-size: 54px; filter: drop-shadow(0 6px 10px rgba(122, 18, 70, .3)); }
+.party-dog {
+  width: 74%; max-width: 230px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgba(122, 18, 70, .34));
+  animation: dog-bob 3.4s ease-in-out infinite;
+}
+@keyframes dog-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-7px) rotate(1.5deg); }
+}
 .face.front h3 {
   margin: 0; font-family: 'Baloo 2', sans-serif;
   font-size: clamp(26px, 7vw, 34px); letter-spacing: .5px;
 }
+.face.front .hint { color: #fff; }
 .hint { font-size: 18px; opacity: .92; animation: breathe 1.9s ease-in-out infinite; }
 @keyframes breathe { 50% { opacity: .5; transform: translateY(2px); } }
 .ribbon {
-  position: absolute; left: 0; right: 0; top: 50%;
-  height: 14px; margin-top: -7px;
+  position: absolute; left: 0; right: 0; bottom: 5%;
+  height: 10px;
   background: rgba(255,255,255,.22);
   box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset;
 }
@@ -317,7 +327,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .skip:hover { opacity: 1; text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .hint, .confetti { animation: none; }
+  .card, .hint, .confetti, .party-dog { animation: none; }
   .cover, .page { transition-duration: .01ms; }
 }
 </style>
