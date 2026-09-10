@@ -20,11 +20,13 @@
 * { box-sizing: border-box; }
 
 html, body {
-  height: 100%;
-  /* Als Spiel: nichts scrollt, nichts federt, kein Doppeltipp-Zoom. */
-  overflow: hidden;
-  overscroll-behavior: none;
-  touch-action: manipulation;
+  /* Bewusst eine normal fliessende Seite. Frueher war sie fest verankert
+     und das Scrollen gesperrt - in In-App-Browsern, die ihre Leisten ueber
+     die Seite legen und die volle Hoehe melden, wurde der Kopfbereich damit
+     unerreichbar. Fliesst die Seite normal, kann nichts unerreichbar werden. */
+  min-height: 100%;
+  overscroll-behavior-y: contain;   /* kein Federn, kein Ziehen zum Neuladen */
+  touch-action: manipulation;       /* kein Doppeltipp-Zoom */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -52,26 +54,13 @@ body {
 }
 
 .app {
-  /* Fest am Bildfenster verankert. In-App-Browsern (WhatsApp, Instagram)
-     rutscht eine bloss hohe Seite beim Ein- und Ausblenden der Adressleiste
-     nach oben weg - der Kopfbereich waere dann nicht mehr erreichbar. */
-  /* Haengt am wirklich sichtbaren Ausschnitt, den app.vue ausmisst.
-     Die Angaben mit svh gelten nur bis das Skript gelaufen ist. */
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: var(--app-top, 0px);
-  height: var(--app-h, 100svh);
-  overflow: hidden;
-  /* Mit viewport-fit=cover meldet der Browser, wie viel Platz seine Leisten
-     und der Notch verdecken - hier wird dieser Platz freigehalten. */
+  min-height: 100svh;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),
     radial-gradient(600px 500px at 5% 60%, #ffe3f1, transparent 70%),
     linear-gradient(180deg, #ffdfef, #ffd2e8);
-  padding-bottom: calc(var(--nav-h) + 28px);
 }
 .app.no-tabs { padding-bottom: 16px; }
 

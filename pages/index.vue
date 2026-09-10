@@ -711,13 +711,17 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((var(--app-h, 100svh) - 210px) / 5.9)
+    calc((100svh - 210px) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
   --fan: calc(var(--card-w) * 0.24);
   max-width: 900px;
-  padding: 12px 16px 96px;
+  padding: 12px 16px 20px;
+  /* Spalte, damit die Leiste unten sitzt, auch wenn der Inhalt kurz ist. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh - 32px);
 }
 
 /* ---------- header ---------- */
@@ -970,15 +974,14 @@ onBeforeUnmount(() => {
 
 /* ---------- action bar ---------- */
 .actions {
-  /* Am sichtbaren Bereich verankert (.app), nicht am gemeldeten Fenster -
-     sonst rutscht die Leiste in In-App-Browsern unter deren Werkzeugleiste. */
-  position: absolute; z-index: 40;
-  left: 50%; transform: translateX(-50%);
-  bottom: 14px;
-  width: min(868px, calc(100% - 32px));
+  /* sticky statt fixed: bleibt beim Scrollen sichtbar, haengt aber im
+     Textfluss - so kann sie nicht neben dem sichtbaren Bereich landen. */
+  position: sticky; z-index: 40;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  margin-top: auto;   /* schiebt die Leiste ans untere Ende */
+  width: 100%;
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-top: 10px;
   padding: 12px 8px;
   background: rgba(255, 235, 245, .94);
   backdrop-filter: blur(12px);
@@ -1007,7 +1010,7 @@ onBeforeUnmount(() => {
 
 /* ---------- toast ---------- */
 .toast {
-  position: absolute; left: 50%; bottom: 108px; transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: 108px; transform: translateX(-50%);
   z-index: 65;
   background: rgba(122,18,70,.92); color: #fff;
   padding: 12px 22px; border-radius: 999px;
@@ -1026,7 +1029,7 @@ onBeforeUnmount(() => {
 }
 
 /* ---------- win ---------- */
-.win { position: absolute; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
+.win { position: fixed; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
 .win-card {
   background: var(--card-solid); color: var(--plum);
   padding: 34px 46px; border-radius: var(--radius);

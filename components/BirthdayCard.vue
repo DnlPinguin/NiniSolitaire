@@ -428,8 +428,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .overlay {
-  /* ebenfalls am sichtbaren Bereich, nicht am gemeldeten Fenster */
-  position: absolute; inset: 0; z-index: 90;
+  position: fixed; inset: 0; z-index: 90;
   display: grid; place-items: center;
   background: radial-gradient(60% 50% at 50% 40%, rgba(255, 214, 236, .96), rgba(255, 198, 228, .99));
   overflow: hidden;
