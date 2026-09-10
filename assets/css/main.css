@@ -2,6 +2,7 @@
 
 :root {
   --kopfabstand: 0px;
+  --scrollreserve: 0px;
   --sat: env(safe-area-inset-top, 0px) / env(safe-area-inset-bottom, 0px);
   --pink-50: #ffeef6;
   --pink-100: #ffd9ec;
@@ -137,8 +138,15 @@ a { color: inherit; text-decoration: none; }
 }
 .futter-zeiger.treffer { scale: 1.3; }
 
-/* Auf Handybreite oben Platz freihalten, siehe Kommentar bei .app.
-   Gemessen waren rund 53 Punkte verdeckt; 56 mit etwas Reserve. */
+/* Auf Handybreite etwas Scroll-Spielraum. Grund:
+   Chrome auf iOS zeichnet JEDE Seite hinter seine Adressleiste, wenn sie
+   ueber einen Link aus einer anderen App geoeffnet wird - nachgewiesen mit
+   nackten HTML-Seiten und sogar mit example.com. Sobald man scrollt, klappt
+   Chrome die Leiste ein und rueckt die Seite zurecht.
+   Andere Webseiten fallen deshalb nicht auf: Sie sind laenger als das
+   Fenster, man scrollt dort ohnehin sofort. Unser Spiel war exakt
+   fensterhoch und damit gar nicht scrollbar - der Fehler blieb stehen.
+   Diese Reserve gibt dem Finger etwas zu tun, ohne sichtbare Luecke. */
 @media (max-width: 560px) {
-  :root { --kopfabstand: 56px; }
+  :root { --scrollreserve: 120px; }
 }

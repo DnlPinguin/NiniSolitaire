@@ -735,6 +735,9 @@ onBeforeUnmount(() => {
   --fan: calc(var(--card-w) * 0.24);
   max-width: 900px;
   padding: 12px 16px 20px;
+  /* Aussenabstand, nicht Innenabstand: nur so waechst die Seitenhoehe
+     (box-sizing: border-box rechnet Innenabstand in die Hoehe hinein). */
+  margin-bottom: var(--scrollreserve, 0px);
   /* Spalte, damit die Leiste unten sitzt, auch wenn der Inhalt kurz ist.
      Die Sicherheitsabstaende muessen abgezogen werden - sonst wird die Seite
      genau um den Notch-Abstand zu hoch und der Browser scrollt von selbst. */
