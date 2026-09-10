@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
-  --rueckkehrleiste: 0px;
+  --kopfabstand: 0px;
   --sat: env(safe-area-inset-top, 0px) / env(safe-area-inset-bottom, 0px);
   --pink-50: #ffeef6;
   --pink-100: #ffd9ec;
@@ -64,9 +64,12 @@ body {
      Die vh-Zeile bleibt als Rueckfall fuer Browser ohne svh. */
   min-height: 100vh;
   min-height: 100svh;
-  /* Ohne viewport-fit=cover setzt Safari die Seite von sich aus unter seine
-     Leisten - die Sicherheitsabstaende decken dann nur Notch und Home-Balken. */
-  padding-top: calc(env(safe-area-inset-top, 0px) + var(--rueckkehrleiste, 0px));
+  /* Safari zeichnet den Seitenanfang hinter seine Adressleiste, wenn die
+     Seite aus einer anderen App geoeffnet wird. Kein Wert meldet das: Am
+     Geraet gemessen lagen rund 53 Punkte dahinter, waehrend die Seite
+     "app top 0, scrollY 0" meldete und nicht einmal scrollbar war.
+     Deshalb wird dieser Platz fest freigehalten. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--kopfabstand, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),
@@ -131,7 +134,8 @@ a { color: inherit; text-decoration: none; }
 }
 .futter-zeiger.treffer { scale: 1.3; }
 
-/* Fehlersuche Stufe 1: Die Seite soll nur so hoch sein wie ihr Inhalt. */
-.app:has(.stufe-test) {
-  min-height: 0;
+/* Auf Handybreite den von Safari verdeckten Streifen freihalten.
+   60 statt der gemessenen 53 als Sicherheitsreserve. */
+@media (max-width: 560px) {
+  :root { --kopfabstand: 60px; }
 }

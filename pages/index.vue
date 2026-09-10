@@ -12,7 +12,7 @@ useHead({ title: 'Solitaire · Ninis Spieleecke' })
  *
  * Zum Weiterschalten einfach die Zahl erhoehen.
  * ------------------------------------------------------------------ */
-const STUFE = 1
+const STUFE = 3
 
 const { play, muted, toggleMute } = useSounds()
 
@@ -520,12 +520,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="container" :class="{ 'stufe-test': STUFE === 1 }">
-    <!-- Fehlersuche Stufe 1: zeigt unmissverstaendlich, wo die Seite beginnt
-         und endet. Sieht man den gruenen Streifen nicht, ist der Seitenanfang
-         verdeckt. -->
-    <div v-if="STUFE === 1" class="marke oben">▲ SEITENANFANG</div>
-
+  <main class="container">
     <header class="topbar">
       <!-- Kein Hub mehr — statt "Zurück" steht hier der Schriftzug.
            Zum Reaktivieren des Hubs:
@@ -672,8 +667,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="STUFE === 1" class="marke unten">▼ SEITENENDE</div>
-
     <nav class="actions">
       <button class="action" :disabled="!canUndo" @click="undo">
         <span class="a-ico">↺</span><span>Rückgängig</span>
@@ -735,7 +728,7 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((100svh - 210px - var(--rueckkehrleiste, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
+    calc((100svh - 210px - var(--kopfabstand, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
@@ -753,7 +746,7 @@ onBeforeUnmount(() => {
     - env(safe-area-inset-bottom, 0px)
   );
   min-height: calc(
-    100svh - 32px - var(--rueckkehrleiste, 0px)
+    100svh - 32px - var(--kopfabstand, 0px)
     - env(safe-area-inset-top, 0px)
     - env(safe-area-inset-bottom, 0px)
   );
