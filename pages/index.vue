@@ -691,10 +691,8 @@ onBeforeUnmount(() => {
     <Transition name="pop">
       <div v-if="showWin" class="win" @click.self="showWin = false">
         <div class="win-card">
-          <span class="sparkles">✨</span>
-          <img class="win-pup" src="/pups/pup-11.webp" alt="">
           <h2>Gewonnen! 🎉</h2>
-          <p>{{ moves }} Züge in {{ timeLabel }}</p>
+          <img class="gutschein" src="/gutschein.webp" alt="Gutschein: ein Möbelstück deiner Wahl, einzulösen bei Daniel">
           <div class="win-actions">
             <button class="btn btn-primary" @click="startGame">Nochmal spielen</button>
             <button class="btn btn-ghost" @click="showWin = false">Zuschauen</button>
@@ -998,11 +996,19 @@ onBeforeUnmount(() => {
 .win { position: fixed; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
 .win-card {
   background: var(--card-solid); color: var(--plum);
-  padding: 34px 46px; border-radius: var(--radius);
+  padding: 20px 20px 22px; border-radius: var(--radius);
   text-align: center; box-shadow: var(--shadow);
+  max-width: min(390px, 92vw);
 }
-.win-pup { width: 120px; height: 120px; object-fit: contain; }
-.win-card h2 { margin: 6px 0 4px; font-size: 30px; }
+/* Der Gutschein ist die Belohnung - also so gross wie moeglich zeigen. */
+.gutschein {
+  display: block;
+  width: 100%; max-width: 330px;
+  margin: 6px auto 14px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(122, 18, 70, .28));
+}
+.win-card h2 { margin: 0 0 2px; font-size: 28px; }
 .sparkles {
   display: block; font-size: 26px;
   animation: twinkle 1.6s ease-in-out infinite;
