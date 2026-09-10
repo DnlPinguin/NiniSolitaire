@@ -12,8 +12,18 @@
  * zu scrollen - unerreichbar wird nichts.
  */
 function messeSichtfeld() {
-  const hoehe = window.visualViewport?.height ?? window.innerHeight
-  document.documentElement.style.setProperty('--vvh', `${Math.round(hoehe)}px`)
+  // Kein einzelner Wert ist verlaesslich: Beim Oeffnen aus einer anderen App
+  // meldet visualViewport zu viel (die Rueckkehr-Leiste rechnet es nicht mit),
+  // waehrend clientHeight den echten Ausschnitt kennt. Der kleinste gewinnt.
+  const kandidaten = [
+    window.visualViewport?.height,
+    document.documentElement.clientHeight,
+    window.innerHeight
+  ].filter((n): n is number => typeof n === 'number' && n > 200)
+
+  if (!kandidaten.length) return
+  const hoehe = Math.round(Math.min(...kandidaten))
+  document.documentElement.style.setProperty('--vvh', `${hoehe}px`)
 }
 
 let messungen: ReturnType<typeof setTimeout>[] = []
@@ -62,6 +72,7 @@ function werteSammeln() {
   werte.value = [
     `innerHeight   ${window.innerHeight}`,
     `visualVP      ${Math.round(vv?.height ?? -1)}  offset ${Math.round(vv?.offsetTop ?? -1)}`,
+    `clientHeight  ${d.clientHeight}`,
     `--vvh         ${getComputedStyle(d).getPropertyValue('--vvh').trim() || '-'}`,
     `body          ${Math.round(document.body.getBoundingClientRect().height)}`,
     `scrollHeight  ${d.scrollHeight}   clientHeight ${d.clientHeight}`,
