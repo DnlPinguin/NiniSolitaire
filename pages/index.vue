@@ -695,7 +695,6 @@ onBeforeUnmount(() => {
           <img class="gutschein" src="/gutschein.webp" alt="Gutschein: ein Möbelstück deiner Wahl, einzulösen bei Daniel">
           <div class="win-actions">
             <button class="btn btn-primary" @click="startGame">Nochmal spielen</button>
-            <button class="btn btn-ghost" @click="showWin = false">Zuschauen</button>
           </div>
         </div>
       </div>
