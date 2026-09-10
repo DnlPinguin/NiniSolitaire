@@ -40,32 +40,44 @@ function messeMehrfach() {
 }
 
 /**
- * Oeffnet iOS einen Link aus einer anderen App (WhatsApp, Notizen), zeigt
- * Safari oben zusaetzlich eine Rueckkehr-Leiste. Verschwindet die kurz nach
- * dem Laden, scrollt Safari die Seite dabei von selbst nach unten - der
- * Inhalt "rutscht hoch". Deshalb halten wir sie die ersten Sekunden oben.
+ * Oeffnet iOS einen Link aus einer anderen App (WhatsApp, Notizen), zeichnet
+ * Safari die Seite unter seine eigene Leiste - und meldet das nirgends: Alle
+ * Werte (scrollY, offsetTop, clientHeight, Lage der App) sind dann korrekt,
+ * trotzdem fehlt oben ein Stueck.
+ *
+ * Von Hand scrollen behebt es. Also macht die Seite genau das selbst: Sie
+ * wird kurz ein paar Pixel hoeher gemacht, einmal angescrollt und wieder
+ * zurueckgesetzt. Das zwingt Safari, seine Leisten und den Ausschnitt neu zu
+ * berechnen - dasselbe, was beim Wischen von Hand passiert.
  */
-let haltenBis = 0
-function haltOben() {
-  if (performance.now() > haltenBis) return
-  if (window.scrollY !== 0) window.scrollTo(0, 0)
-  requestAnimationFrame(haltOben)
-}
-function obenHalten(dauer = 3500) {
-  const lief = performance.now() <= haltenBis
-  haltenBis = performance.now() + dauer
-  if (!lief) haltOben()
+function stupsSafari() {
+  const koerper = document.body
+  const vorher = koerper.style.minHeight
+  // ein paar Pixel Spielraum, sonst gibt es nichts zu scrollen
+  koerper.style.minHeight = `calc(var(--vvh, 100svh) + 3px)`
+
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 2)
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0)
+      koerper.style.minHeight = vorher
+      messeSichtfeld()
+    })
+  })
 }
 
 onMounted(() => {
   messeMehrfach()
-  obenHalten()
+  // mehrfach, weil Safari erst nach dem Aufbau seine Leisten festlegt
+  ;[60, 350, 900, 1800].forEach(ms => setTimeout(stupsSafari, ms))
   const vv = window.visualViewport
   vv?.addEventListener('resize', messeSichtfeld)
   window.addEventListener('resize', messeSichtfeld)
   window.addEventListener('orientationchange', messeMehrfach)
-  window.addEventListener('pageshow', () => { messeMehrfach(); obenHalten() })
-  document.addEventListener('visibilitychange', () => { messeMehrfach(); obenHalten(1500) })
+  window.addEventListener('pageshow', () => {
+    messeMehrfach(); setTimeout(stupsSafari, 120)
+  })
+  document.addEventListener('visibilitychange', () => { messeMehrfach(); setTimeout(stupsSafari, 120) })
 })
 
 /* Messanzeige, nur mit ?debug=1 in der Adresse sichtbar. */
