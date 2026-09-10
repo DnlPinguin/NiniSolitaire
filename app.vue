@@ -1,4 +1,41 @@
 <script setup lang="ts">
+/**
+ * In-App-Browser (WhatsApp, Instagram) legen ihre Leisten ueber die Seite und
+ * melden trotzdem die volle Hoehe. Eine mit position: fixed verankerte App
+ * ragt dann oben unter die Adressleiste und laesst unten Rest stehen.
+ *
+ * visualViewport meldet dagegen den wirklich sichtbaren Ausschnitt. Wir
+ * schreiben Hoehe und Versatz in CSS-Variablen und richten die App danach.
+ */
+function passeAnSichtfeld() {
+  const vv = window.visualViewport
+  const wurzel = document.documentElement
+  const hoehe = vv?.height ?? window.innerHeight
+  const versatz = vv?.offsetTop ?? 0
+  wurzel.style.setProperty('--app-h', `${Math.round(hoehe)}px`)
+  wurzel.style.setProperty('--app-top', `${Math.round(versatz)}px`)
+}
+
+onMounted(() => {
+  passeAnSichtfeld()
+  const vv = window.visualViewport
+  vv?.addEventListener('resize', passeAnSichtfeld)
+  vv?.addEventListener('scroll', passeAnSichtfeld)
+  window.addEventListener('resize', passeAnSichtfeld)
+  window.addEventListener('orientationchange', passeAnSichtfeld)
+  // Manche Browser melden erst kurz nach dem Aufbau die richtigen Werte.
+  setTimeout(passeAnSichtfeld, 300)
+  setTimeout(passeAnSichtfeld, 1200)
+})
+
+onBeforeUnmount(() => {
+  const vv = window.visualViewport
+  vv?.removeEventListener('resize', passeAnSichtfeld)
+  vv?.removeEventListener('scroll', passeAnSichtfeld)
+  window.removeEventListener('resize', passeAnSichtfeld)
+  window.removeEventListener('orientationchange', passeAnSichtfeld)
+})
+
 /*
  * Tab-Bar stillgelegt (2026-09-10): Es gibt nur noch Solitaire, also führt
  * keine Navigation mehr irgendwohin. Zum Reaktivieren zusammen mit dem

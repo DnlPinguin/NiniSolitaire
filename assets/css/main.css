@@ -55,11 +55,14 @@ body {
   /* Fest am Bildfenster verankert. In-App-Browsern (WhatsApp, Instagram)
      rutscht eine bloss hohe Seite beim Ein- und Ausblenden der Adressleiste
      nach oben weg - der Kopfbereich waere dann nicht mehr erreichbar. */
+  /* Haengt am wirklich sichtbaren Ausschnitt, den app.vue ausmisst.
+     Die Angaben mit svh gelten nur bis das Skript gelaufen ist. */
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: var(--app-top, 0px);
+  height: var(--app-h, 100svh);
   overflow: hidden;
-  /* Notch oben, Home-Leiste unten - und in In-App-Browsern die Adressleiste */
-  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),

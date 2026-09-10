@@ -711,7 +711,7 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((100svh - 210px) / 5.9)
+    calc((var(--app-h, 100svh) - 210px) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
