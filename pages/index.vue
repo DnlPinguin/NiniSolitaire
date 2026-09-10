@@ -815,7 +815,9 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 22% 26%, rgba(255,255,255,.22) 0 12%, transparent 13%),
     radial-gradient(circle at 78% 72%, rgba(255,255,255,.22) 0 12%, transparent 13%),
     linear-gradient(160deg, #ff7ab8, var(--pink-500));
-  animation: draw-face .46s steps(1, end) backwards;
+  /* both: waehrend der Verzoegerung verdeckt, nach dem Umdrehen dauerhaft weg.
+     Mit 'backwards' allein kaeme die Rueckseite am Ende zurueck. */
+  animation: draw-face .46s linear both;
   animation-delay: calc(var(--d) * 110ms);
 }
 @keyframes draw-face {
