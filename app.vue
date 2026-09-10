@@ -24,6 +24,12 @@ function messeSichtfeld() {
   if (!kandidaten.length) return
   const hoehe = Math.round(Math.min(...kandidaten))
   document.documentElement.style.setProperty('--vvh', `${hoehe}px`)
+
+  // Safari kann den sichtbaren Ausschnitt verschieben, ohne zu scrollen -
+  // dann liegt unser Seitenanfang oberhalb des Sichtbaren. Diesen Versatz
+  // gleichen wir aus.
+  const versatz = Math.round(window.visualViewport?.offsetTop ?? 0)
+  document.documentElement.style.setProperty('--vvo', `${Math.max(0, versatz)}px`)
 }
 
 let messungen: ReturnType<typeof setTimeout>[] = []
@@ -71,8 +77,10 @@ function werteSammeln() {
   const vv = window.visualViewport
   werte.value = [
     `innerHeight   ${window.innerHeight}`,
-    `visualVP      ${Math.round(vv?.height ?? -1)}  offset ${Math.round(vv?.offsetTop ?? -1)}`,
+    `visualVP h ${Math.round(vv?.height ?? -1)}  offsetTop ${Math.round(vv?.offsetTop ?? -1)}`,
     `clientHeight  ${d.clientHeight}`,
+    `app top/bot   ${Math.round(document.querySelector('.app')?.getBoundingClientRect().top ?? 0)} / ${Math.round(document.querySelector('.app')?.getBoundingClientRect().bottom ?? 0)}`,
+    `kopf top      ${Math.round(document.querySelector('.topbar')?.getBoundingClientRect().top ?? -999)}`,
     `--vvh         ${getComputedStyle(d).getPropertyValue('--vvh').trim() || '-'}`,
     `body          ${Math.round(document.body.getBoundingClientRect().height)}`,
     `scrollHeight  ${d.scrollHeight}   clientHeight ${d.clientHeight}`,
@@ -156,7 +164,7 @@ onBeforeUnmount(() => {
 <style scoped>
 /* Messanzeige fuer die Fehlersuche auf echten Geraeten */
 .messwerte {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
   margin: 0; padding: 6px 8px;
   background: rgba(0, 0, 0, .82); color: #7CFFB2;
   font: 600 11px/1.35 ui-monospace, monospace;

@@ -57,8 +57,10 @@ body {
 }
 
 .app {
-  /* --vvh ist der wirklich sichtbare Ausschnitt, gemessen in app.vue. */
+  /* --vvh ist der wirklich sichtbare Ausschnitt, gemessen in app.vue.
+     --vvo gleicht aus, wenn Safari diesen Ausschnitt verschiebt. */
   min-height: var(--vvh, 100svh);
+  transform: translateY(var(--vvo, 0px));
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
