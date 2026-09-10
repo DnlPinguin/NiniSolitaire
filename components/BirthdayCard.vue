@@ -97,12 +97,12 @@ onMounted(() => {
 function next() {
   if (isLast.value) return
   page.value++
-  play('flip')
+  play('swipe')
 }
 function back() {
   if (page.value === 0) return
   page.value--
-  play('flip')
+  play('swipe')
 }
 
 // Auf den Mitmach-Seiten geht es erst weiter, wenn man sie geloest hat.
@@ -170,7 +170,7 @@ function boop(e?: MouseEvent) {
   if (boops.value >= BOOPS_NOETIG) return
   boops.value++
   boopReaktion.value = spruchFuer(boops.value)
-  play('foundation')
+  play('punch')
   if (e?.isTrusted) navigator.vibrate?.(12)
 
   const id = knallId++
@@ -201,7 +201,7 @@ const futter = reactive({ x: 0, y: 0, zieht: false, drueber: false })
 function leckerli(echt = false) {
   if (leckerliGegeben.value) return
   leckerliGegeben.value = true
-  play('win')
+  play('bark')
   if (echt) navigator.vibrate?.(20)
   timers.push(setTimeout(next, 1600))
 }
