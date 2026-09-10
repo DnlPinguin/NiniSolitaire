@@ -1,75 +1,88 @@
 <script setup lang="ts">
 /**
- * Interaktive Geburtstagskarte: antippen zum Aufklappen, dann durchblättern.
+ * Geburtstagskarte: antippen zum Aufklappen, dann durchblättern.
+ * Geblättert wird per Wischen oder über das umgeknickte Eck unten rechts.
  */
 const emit = defineEmits<{ done: [] }>()
 const { play } = useSounds()
 
+/* ---------------- Alter & Fun Facts ---------------- */
 // Nini: 11. September 1997
 const GEBURTSJAHR = 1997
-const ALTER_JETZT = 29          // Stand 2026, dient auch als Wert fuers Server-Rendering
+const ALTER_JETZT = 29        // Startwert fuers Server-Rendering
 
-// Das Alter, das sie in diesem Kalenderjahr wird. Erst nach dem Mounten
-// berechnet, damit Server und Browser beim Hydrieren nicht auseinanderlaufen.
+// Erst nach dem Mounten berechnet, damit Server und Browser beim
+// Hydrieren nicht auseinanderlaufen.
 const alter = ref(ALTER_JETZT)
-onMounted(() => {
-  alter.value = new Date().getFullYear() - GEBURTSJAHR
-})
+onMounted(() => { alter.value = new Date().getFullYear() - GEBURTSJAHR })
 
 const de = (n: number) => Math.round(n).toLocaleString('de-DE')
 const mrd = (n: number) => (n / 1e9).toLocaleString('de-DE', { maximumFractionDigits: 1 })
 
 const funFacts = computed(() => {
-  const ALTER = alter.value
-  const TAGE = ALTER * 365.25
+  const A = alter.value
+  const TAGE = A * 365.25
   return [
-  { icon: '🐶', text: `In Hundejahren wärst du <b>${ALTER * 7}</b>.` },
-  { icon: '🌞', text: `<b>${de(TAGE)}</b> Tage – und jeder einzelne zählt.` },
-  { icon: '💗', text: `Dein Herz hat rund <b>${mrd(TAGE * 24 * 60 * 70)}</b> Milliarden Mal geschlagen.` },
-  { icon: '🪐', text: `<b>${ALTER}</b> Runden um die Sonne – rund <b>${mrd(ALTER * 940e6)}</b> Milliarden Kilometer.` },
-  { icon: '😴', text: `Etwa <b>${de(ALTER / 3)}</b> Jahre davon hast du verschlafen. Verdient.` }
+    { icon: '🐶', text: `In Hundejahren wärst du <b>${A * 7}</b>.` },
+    { icon: '🌞', text: `<b>${de(TAGE)}</b> Tage – und jeder einzelne zählt.` },
+    { icon: '💗', text: `Dein Herz hat rund <b>${mrd(TAGE * 24 * 60 * 70)}</b> Milliarden Mal geschlagen.` },
+    { icon: '🪐', text: `<b>${A}</b> Runden um die Sonne – rund <b>${mrd(A * 940e6)}</b> Milliarden Kilometer.` },
+    { icon: '😴', text: `Etwa <b>${de(A / 3)}</b> Jahre davon hast du verschlafen. Verdient.` }
   ]
 })
 
-interface Page { img?: string; title: string; text?: string; facts?: boolean; boop?: boolean }
+/* ---------------- Seiten ---------------- */
+type Art = 'text' | 'facts' | 'boop' | 'aua' | 'schatz'
+interface Page { art: Art; img?: string; title: string; text?: string }
 
 const pages = computed<Page[]>(() => [
   {
+    art: 'text',
     img: '/pups/pup-11.webp',
     title: 'Alles Gute zum<br>Geburtstag, Nini!',
     text: '11. September – heute wird gefeiert. ♡'
   },
   {
+    art: 'text',
     img: '/pups/pup-18.webp',
-    title: 'Was Kleines für dich',
-    text: 'Falls du mal ein bisschen<br>Ablenkung brauchst.'
-  },
-  {
-    title: `${alter.value} Jahre –<br>in Zahlen`,
-    facts: true
-  },
-  {
-    img: '/pups/pup-25.webp',
     title: 'Ich hoffe es<br>gefällt dir, Bebi',
-    text: 'Ich wusste nicht genau,<br>was du willst. ♡',
-    boop: true
+    text: 'Ich wusste nicht genau,<br>was du willst. ♡'
+  },
+  { art: 'facts', title: `${alter.value} Jahre –<br>in Zahlen` },
+  {
+    art: 'boop',
+    img: '/treasure-dog.webp',
+    title: 'Er sitzt auf<br>deinem Geschenk',
+    text: 'Boop the snoot,<br>damit er weggeht 👆'
+  },
+  {
+    art: 'aua',
+    img: '/hurt-dog.webp',
+    title: 'Ohhh neeein,<br>das war zu fest!',
+    text: 'Gib ihm schnell ein Leckerli. 🥺'
+  },
+  {
+    art: 'schatz',
+    title: 'Die Truhe geht auf …',
+    text: 'Dein eigenes Solitaire-Deck. ✨'
   }
 ])
 
-const opened = ref(false)
 const page = ref(0)
 const leaving = ref(false)
 const isLast = computed(() => page.value === pages.value.length - 1)
 
+/* ---------------- Konfetti ---------------- */
 interface Confetti { id: number; left: number; delay: number; dur: number; size: number; glyph: string }
 const confetti = ref<Confetti[]>([])
+const opened = ref(false)
 
 const reduced = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 onMounted(() => {
-  // Zufallswerte erst im Browser — sonst weicht der Server ab (Hydration).
+  // Zufall nur im Browser, sonst weicht der Server ab.
   confetti.value = Array.from({ length: 22 }, (_, i) => ({
     id: i,
     left: Math.round(Math.random() * 96),
@@ -80,38 +93,95 @@ onMounted(() => {
   }))
 })
 
+/* ---------------- Blättern ---------------- */
+function next() {
+  if (isLast.value) return
+  page.value++
+  play('flip')
+}
+function back() {
+  if (page.value === 0) return
+  page.value--
+  play('flip')
+}
+
+// Wischen
+const swipe = reactive({ x: 0, active: false })
+function onSwipeStart(e: PointerEvent) {
+  swipe.x = e.clientX
+  swipe.active = true
+}
+function onSwipeEnd(e: PointerEvent) {
+  if (!swipe.active) return
+  swipe.active = false
+  const dx = e.clientX - swipe.x
+  if (Math.abs(dx) < 45) return
+  dx < 0 ? next() : back()
+}
+
 /* ---------------- Boop the snoot ---------------- */
 const boops = ref(0)
 const boopReaktion = ref('')
 const boopHerzen = ref<{ id: number; left: number; rot: number }[]>([])
 let herzId = 0
-let boopTimer: ReturnType<typeof setTimeout> | null = null
+const timers: ReturnType<typeof setTimeout>[] = []
 
-const REAKTIONEN = [
-  'Boop! 🐽',
-  'Nochmal! 💕',
-  'Er mag das ☺️',
-  'Schwanzwedeln 🐕',
-  'Bester Boop 🏆'
+const BOOPS_NOETIG = 30
+
+// ab welchem Boop welcher Spruch steht
+const REAKTIONEN: [number, string][] = [
+  [1, 'Boop! 🐽'],
+  [3, 'Er guckt dich an … 👀'],
+  [6, 'Nochmal! 💗'],
+  [10, 'Schwanzwedeln 🐕'],
+  [15, 'Halbzeit! 💪'],
+  [20, 'Er wird müde … 😪'],
+  [25, 'Gleich hast du ihn 🔥'],
+  [29, 'Noch einer! ✨']
 ]
 
+function spruchFuer(n: number) {
+  let s = REAKTIONEN[0]![1]
+  for (const [ab, text] of REAKTIONEN) if (n >= ab) s = text
+  return s
+}
+
 function boop() {
+  if (boops.value >= BOOPS_NOETIG) return
   boops.value++
-  boopReaktion.value = REAKTIONEN[Math.min(boops.value - 1, REAKTIONEN.length - 1)]!
+  boopReaktion.value = spruchFuer(boops.value)
   play('foundation')
   navigator.vibrate?.(12)
 
   const id = herzId++
   boopHerzen.value.push({ id, left: 30 + Math.random() * 40, rot: Math.random() * 50 - 25 })
-  setTimeout(() => {
+  timers.push(setTimeout(() => {
     boopHerzen.value = boopHerzen.value.filter(h => h.id !== id)
-  }, 900)
+  }, 900))
 
-  if (boopTimer) clearTimeout(boopTimer)
-  boopTimer = setTimeout(() => (boopReaktion.value = ''), 1600)
+  // Beim letzten Mal war es dann doch zu fest …
+  if (boops.value === BOOPS_NOETIG) {
+    boopReaktion.value = 'Ups … 😬'
+    play('invalid')
+    timers.push(setTimeout(next, 850))
+  }
 }
 
-onBeforeUnmount(() => { if (boopTimer) clearTimeout(boopTimer) })
+/* ---------------- Leckerli ---------------- */
+const leckerliGegeben = ref(false)
+function leckerli() {
+  if (leckerliGegeben.value) return
+  leckerliGegeben.value = true
+  play('win')
+  navigator.vibrate?.(20)
+  timers.push(setTimeout(next, 1400))
+}
+
+function finish() {
+  if (leaving.value) return
+  leaving.value = true
+  timers.push(setTimeout(() => emit('done'), reduced() ? 0 : 420))
+}
 
 function open() {
   if (opened.value) return
@@ -119,23 +189,7 @@ function open() {
   play('win')
 }
 
-function next() {
-  if (isLast.value) return
-  page.value++
-  play('foundation')
-}
-
-function back() {
-  if (page.value === 0) return
-  page.value--
-  play('flip')
-}
-
-function finish() {
-  if (leaving.value) return
-  leaving.value = true
-  setTimeout(() => emit('done'), reduced() ? 0 : 420)
-}
+onBeforeUnmount(() => timers.forEach(clearTimeout))
 </script>
 
 <template>
@@ -154,11 +208,14 @@ function finish() {
     >{{ c.glyph }}</span>
 
     <div class="stage">
-      <div class="card" :class="{ open: opened }">
-        <!-- Rückwand, damit unter der letzten Seite nichts durchscheint -->
+      <div
+        class="card"
+        :class="{ open: opened }"
+        @pointerdown="onSwipeStart"
+        @pointerup="onSwipeEnd"
+      >
         <div class="sheet backdrop" />
 
-        <!-- Seiten: die aktuelle liegt oben, geblätterte klappen nach links weg -->
         <div
           v-for="(p, i) in pages"
           :key="i"
@@ -166,13 +223,23 @@ function finish() {
           :class="{ turned: i < page }"
           :style="{ zIndex: pages.length - i }"
         >
-          <template v-if="p.boop">
+          <!-- Fun Facts -->
+          <template v-if="p.art === 'facts'">
             <h2 class="compact" v-html="p.title" />
-            <p class="letter script" v-html="p.text" />
+            <ul class="facts">
+              <li v-for="(f, fi) in funFacts" :key="fi">
+                <span class="fact-icon">{{ f.icon }}</span>
+                <span v-html="f.text" />
+              </li>
+            </ul>
+          </template>
 
-            <button class="snoot" :class="{ booped: boops }" @click="boop">
+          <!-- Hund auf der Truhe -->
+          <template v-else-if="p.art === 'boop'">
+            <h2 class="compact" v-html="p.title" />
+            <button class="snoot" :class="{ weg: boops >= 3 }" @click.stop="boop">
               <img :src="p.img" alt="" draggable="false">
-              <span class="nose">🐽</span>
+              <span v-if="!boops" class="nose">🐽</span>
               <span
                 v-for="h in boopHerzen"
                 :key="h.id"
@@ -180,34 +247,57 @@ function finish() {
                 :style="{ left: `${h.left}%`, transform: `rotate(${h.rot}deg)` }"
               >💗</span>
             </button>
-
-            <span class="boop-label">
-              {{ boopReaktion || (boops ? `${boops} Boops 🐾` : 'Boop the snoot 👆') }}
-            </span>
+            <p class="script hinweis">{{ boopReaktion || '' }}</p>
+            <p v-if="!boops" class="script anleitung" v-html="p.text" />
+            <div v-else class="boop-fortschritt">
+              <div class="balken"><span :style="{ width: `${(boops / BOOPS_NOETIG) * 100}%` }" /></div>
+              <span class="zaehler">{{ boops }} / {{ BOOPS_NOETIG }}</span>
+            </div>
           </template>
 
+          <!-- Aua: Leckerli geben -->
+          <template v-else-if="p.art === 'aua'">
+            <h2 class="compact" v-html="p.title" />
+            <div class="aua-bild" :class="{ geheilt: leckerliGegeben }">
+              <img :src="p.img" alt="" draggable="false">
+              <span v-if="leckerliGegeben" class="heil-herz">💕</span>
+            </div>
+            <p v-if="!leckerliGegeben" class="script anleitung" v-html="p.text" />
+            <p v-else class="script anleitung">Schon viel besser. 🥰</p>
+            <button v-if="!leckerliGegeben" class="leckerli" @click.stop="leckerli">
+              🦴 Leckerli geben
+            </button>
+          </template>
+
+          <!-- Die Truhe geht auf -->
+          <template v-else-if="p.art === 'schatz'">
+            <h2 class="compact" v-html="p.title" />
+            <div class="truhe">
+              <span class="strahlen" />
+              <span class="deckel" />
+              <span class="karte k1" /><span class="karte k2" /><span class="karte k3" />
+              <span class="kiste" />
+            </div>
+            <p class="script anleitung" v-html="p.text" />
+            <button class="btn btn-primary start" @click.stop="finish">Los geht's 🎉</button>
+          </template>
+
+          <!-- normale Seite -->
           <template v-else>
             <img v-if="p.img" class="pup" :src="p.img" alt="" draggable="false">
-            <h2 :class="{ compact: p.facts }" v-html="p.title" />
+            <h2 v-html="p.title" />
             <p v-if="p.text" class="script" v-html="p.text" />
           </template>
 
-          <ul v-if="p.facts" class="facts">
-            <li v-for="(f, fi) in funFacts" :key="fi">
-              <span class="fact-icon">{{ f.icon }}</span>
-              <span v-html="f.text" />
-            </li>
-          </ul>
-
-          <div class="nav">
-            <button v-if="i > 0" class="page-btn ghost" @click="back">←</button>
-            <button v-if="i < pages.length - 1" class="page-btn" @click="next">Weiter →</button>
-            <button v-else class="btn btn-primary start" @click="finish">Los geht's 🎉</button>
-          </div>
-
-          <div class="dots">
-            <span v-for="(_, d) in pages" :key="d" :class="{ on: d === page }" />
-          </div>
+          <!-- umgeknicktes Eck: weiterblättern -->
+          <button
+            v-if="i < pages.length - 1"
+            class="eselsohr"
+            title="Weiterblättern"
+            @click.stop="next"
+          >
+            <span class="knick" />
+          </button>
         </div>
 
         <!-- Deckel -->
@@ -244,6 +334,7 @@ function finish() {
   aspect-ratio: 3 / 4;
   transform-style: preserve-3d;
   animation: float 4s ease-in-out infinite;
+  touch-action: pan-y;
 }
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
@@ -261,10 +352,11 @@ function finish() {
 .backdrop { z-index: 0; }
 .page {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px; padding: 22px 18px 16px; text-align: center;
+  gap: 4px; padding: 20px 18px 22px; text-align: center;
   transform-origin: left center;
   backface-visibility: hidden;
   transition: transform .85s cubic-bezier(.35, .75, .25, 1);
+  overflow: hidden;
 }
 .page.turned { transform: rotateY(-172deg); }
 
@@ -275,14 +367,36 @@ function finish() {
   font-size: clamp(18px, 5.2vw, 23px); line-height: 1.15;
   color: var(--pink-600);
 }
+h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .page .script { margin: 6px 0 0; font-size: 16px; line-height: 1.3; color: var(--pink-400); }
+.anleitung { font-size: 17px !important; }
+.hinweis { min-height: 22px; font-size: 18px !important; color: var(--pink-500) !important; }
 
+/* ---------- umgeknicktes Eck ---------- */
+.eselsohr {
+  position: absolute; right: 0; bottom: 0;
+  width: 62px; height: 62px;
+  border: 0; padding: 0; background: none;
+  cursor: pointer;
+  border-bottom-right-radius: 22px;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.knick {
+  position: absolute; right: 0; bottom: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 0 54px 54px;
+  border-color: transparent transparent #ffd9ec transparent;
+  filter: drop-shadow(-3px -3px 5px rgba(214, 51, 132, .22));
+  transition: border-width .25s ease;
+}
+.eselsohr:hover .knick, .eselsohr:active .knick { border-width: 0 0 66px 66px; }
+
+/* ---------- Fun Facts ---------- */
 .facts {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0 2px;
-  display: flex; flex-direction: column; gap: 9px;
-  text-align: left;
+  list-style: none; margin: 12px 0 0; padding: 0 2px;
+  display: flex; flex-direction: column; gap: 9px; text-align: left;
 }
 .facts li {
   display: flex; align-items: flex-start; gap: 9px;
@@ -291,60 +405,45 @@ function finish() {
 }
 .facts :deep(b) { color: var(--pink-600); font-weight: 800; }
 .fact-icon { font-size: 16px; line-height: 1.1; flex: none; }
-h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 
-.nav { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.page-btn {
-  border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 15px;
-  padding: 11px 20px; border-radius: 999px;
-  background: linear-gradient(180deg, var(--pink-400), var(--pink-500)); color: #fff;
-  box-shadow: 0 8px 18px rgba(246, 51, 140, .34);
-}
-.page-btn.ghost {
-  background: rgba(246, 51, 140, .1); color: var(--pink-500);
-  box-shadow: none; padding: 11px 15px;
-}
-
-.dots { display: flex; gap: 6px; margin-top: 14px; }
-.dots span {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: rgba(246, 51, 140, .22); transition: .2s;
-}
-.dots span.on { background: var(--pink-500); transform: scale(1.25); }
-
-/* ---------- Boop the snoot ---------- */
-.letter {
-  margin: 8px 0 2px !important;
-  font-size: 17px !important;
-  line-height: 1.35;
-}
+/* ---------- Boop ---------- */
 .snoot {
   position: relative;
-  border: 0; padding: 0; margin: 6px 0 0;
+  border: 0; padding: 0; margin: 8px 0 0;
   background: none; cursor: pointer;
-  width: 52%; max-width: 150px;
+  width: 82%; max-width: 210px;
   touch-action: manipulation;
-  transition: transform .16s cubic-bezier(.34, 1.7, .5, 1);
+  transition: transform .5s cubic-bezier(.34, 1.5, .5, 1), opacity .5s;
 }
 .snoot img { width: 100%; display: block; object-fit: contain; }
-.snoot:active { transform: scale(.9) rotate(-2deg); }
+.snoot:active { transform: scale(.94) rotate(-2deg); }
+.snoot.weg { transform: translate(120%, 12%) rotate(14deg); opacity: 0; }
 
-/* der Hinweis wippt, bis einmal gestupst wurde */
+.boop-fortschritt { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.balken {
+  width: 110px; height: 7px; border-radius: 999px;
+  background: rgba(246, 51, 140, .16); overflow: hidden;
+}
+.balken span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--pink-400), var(--pink-500));
+  transition: width .2s ease;
+}
+.zaehler { font-size: 12px; font-weight: 800; color: var(--pink-500); }
+
 .nose {
-  position: absolute; left: 50%; top: 34%;
+  position: absolute; left: 50%; top: 24%;
   transform: translate(-50%, -50%);
-  font-size: 20px; opacity: .0;
+  font-size: 20px; opacity: 0;
   animation: nose-hint 1.6s ease-in-out infinite;
   pointer-events: none;
 }
-.snoot.booped .nose { animation: none; opacity: 0; }
 @keyframes nose-hint {
   0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
-  50%      { opacity: .85; transform: translate(-50%, -60%) scale(1.15); }
+  50%      { opacity: .9; transform: translate(-50%, -62%) scale(1.15); }
 }
-
 .boop-heart {
-  position: absolute; bottom: 40%;
+  position: absolute; bottom: 45%;
   font-size: 20px; pointer-events: none;
   animation: boop-rise .9s ease-out forwards;
 }
@@ -353,14 +452,87 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   to   { opacity: 0; translate: 0 -70px; }
 }
 
-.boop-label {
-  margin-top: 8px;
-  font-family: 'Caveat', cursive;
-  font-size: 19px; color: var(--pink-500); font-weight: 600;
-  min-height: 24px;
+/* ---------- Aua ---------- */
+.aua-bild { position: relative; width: 58%; max-width: 165px; margin-top: 8px; }
+.aua-bild img { width: 100%; display: block; object-fit: contain; transition: transform .5s ease; }
+.aua-bild.geheilt img { transform: scale(1.06) rotate(-2deg); }
+.heil-herz {
+  position: absolute; top: -6px; right: 2px; font-size: 30px;
+  animation: heil .9s ease-out;
+}
+@keyframes heil {
+  from { opacity: 0; transform: scale(.4); }
+  60%  { opacity: 1; transform: scale(1.25); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.leckerli {
+  margin-top: 14px; border: 0; cursor: pointer;
+  font: inherit; font-weight: 800; font-size: 15px;
+  padding: 12px 22px; border-radius: 999px;
+  background: linear-gradient(180deg, #ffd76e, #f5b73c); color: #6b3d05;
+  box-shadow: 0 8px 18px rgba(214, 145, 20, .38);
+  touch-action: manipulation;
+  animation: wackel 1.8s ease-in-out infinite;
+}
+@keyframes wackel {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg) translateY(-2px); }
 }
 
-/* ---------- Deckel ---------- */
+/* ---------- Schatztruhe ---------- */
+.truhe {
+  position: relative;
+  width: 165px; height: 125px;
+  margin: 10px 0 2px;
+}
+.strahlen {
+  position: absolute; left: 50%; top: 42%;
+  width: 190px; height: 190px; margin: -95px 0 0 -95px;
+  background: radial-gradient(circle, rgba(255, 215, 110, .85) 0%, rgba(255, 215, 110, .3) 38%, transparent 66%);
+  animation: leuchten 2.6s ease-in-out infinite;
+}
+@keyframes leuchten { 50% { transform: scale(1.12); opacity: .8; } }
+
+.kiste, .deckel {
+  position: absolute; left: 50%;
+  width: 132px; margin-left: -66px;
+  background: linear-gradient(180deg, #a9702f, #7c4a18);
+  border: 3px solid #e0a838;
+  box-sizing: border-box;
+}
+.kiste { bottom: 0; height: 62px; border-radius: 6px 6px 10px 10px; }
+.deckel {
+  top: 18px; height: 34px;
+  border-radius: 16px 16px 4px 4px;
+  transform-origin: 50% 100%;
+  animation: deckel-auf .9s cubic-bezier(.3, .9, .4, 1) forwards;
+}
+@keyframes deckel-auf {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(-58deg) translateY(-6px); }
+}
+
+/* die Karten im Inneren */
+.karte {
+  position: absolute; left: 50%; bottom: 42px;
+  width: 34px; height: 48px; margin-left: -17px;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.25) 0 14%, transparent 15%),
+    linear-gradient(160deg, #ff7ab8, var(--pink-500));
+  box-shadow: 0 4px 10px rgba(122, 18, 70, .3);
+  animation: karte-raus .8s cubic-bezier(.3, .9, .4, 1) backwards;
+}
+.k1 { animation-delay: .35s; transform: translate(-34px, -22px) rotate(-20deg); }
+.k2 { animation-delay: .5s;  transform: translateY(-38px) rotate(2deg); }
+.k3 { animation-delay: .65s; transform: translate(34px, -22px) rotate(20deg); }
+@keyframes karte-raus {
+  from { transform: translateY(10px) rotate(0deg) scale(.7); opacity: 0; }
+}
+.start { margin-top: 14px; }
+
+/* ---------- Deckel der Karte ---------- */
 .cover {
   position: absolute; inset: 0;
   transform-origin: left center; transform-style: preserve-3d;
@@ -371,7 +543,8 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .face {
   position: absolute; inset: 0;
   border-radius: 22px; backface-visibility: hidden; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 16px 14px;
 }
 .face.front {
   background:
@@ -387,8 +560,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   box-shadow: inset 0 0 40px rgba(214, 51, 132, .12);
 }
 .party-dog {
-  width: 74%; max-width: 230px;
-  object-fit: contain;
+  width: 74%; max-width: 230px; object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(122, 18, 70, .34));
 }
 .face.front h3 {
@@ -426,7 +598,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .skip:hover { opacity: 1; text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .hint, .confetti { animation: none; }
-  .cover, .page { transition-duration: .01ms; }
+  .card, .hint, .confetti, .leckerli, .strahlen { animation: none; }
+  .cover, .page, .snoot { transition-duration: .01ms; }
 }
 </style>
