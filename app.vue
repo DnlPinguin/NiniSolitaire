@@ -1,4 +1,48 @@
 <script setup lang="ts">
+/**
+ * WhatsApp und Instagram zeigen Webseiten in einem Fenster, ueber das sie
+ * ihre EIGENEN Bedienleisten legen. Fuer die Seite ist das unsichtbar - sie
+ * haelt sich fuer bildschirmfuellend. Deshalb helfen weder svh noch dvh noch
+ * die Sicherheitsabstaende: Die Seite wird hoeher als das, was man sieht,
+ * und der Browser scrollt den Ueberhang von selbst weg.
+ *
+ * Einzig visualViewport meldet den wirklich sichtbaren Ausschnitt. Der Wert
+ * landet in --vvh, an dem sich die Hoehenangaben orientieren. Weil die Seite
+ * dabei normal fliesst, bleibt bei einer Fehlmessung schlimmstenfalls etwas
+ * zu scrollen - unerreichbar wird nichts.
+ */
+function messeSichtfeld() {
+  const hoehe = window.visualViewport?.height ?? window.innerHeight
+  document.documentElement.style.setProperty('--vvh', `${Math.round(hoehe)}px`)
+}
+
+let messungen: ReturnType<typeof setTimeout>[] = []
+function messeMehrfach() {
+  messungen.forEach(clearTimeout)
+  // In-App-Browser melden erst nach dem Aufbau brauchbare Werte.
+  messungen = [0, 80, 300, 800, 1500, 2500].map(ms => setTimeout(messeSichtfeld, ms))
+}
+
+onMounted(() => {
+  messeMehrfach()
+  const vv = window.visualViewport
+  vv?.addEventListener('resize', messeSichtfeld)
+  window.addEventListener('resize', messeSichtfeld)
+  window.addEventListener('orientationchange', messeMehrfach)
+  window.addEventListener('pageshow', messeMehrfach)
+  document.addEventListener('visibilitychange', messeMehrfach)
+})
+
+onBeforeUnmount(() => {
+  messungen.forEach(clearTimeout)
+  const vv = window.visualViewport
+  vv?.removeEventListener('resize', messeSichtfeld)
+  window.removeEventListener('resize', messeSichtfeld)
+  window.removeEventListener('orientationchange', messeMehrfach)
+  window.removeEventListener('pageshow', messeMehrfach)
+  document.removeEventListener('visibilitychange', messeMehrfach)
+})
+
 /*
  * Tab-Bar stillgelegt (2026-09-10): Es gibt nur noch Solitaire, also führt
  * keine Navigation mehr irgendwohin. Zum Reaktivieren zusammen mit dem

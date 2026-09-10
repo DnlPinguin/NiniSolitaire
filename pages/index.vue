@@ -711,7 +711,7 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((100svh - 210px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
+    calc((var(--vvh, 100svh) - 210px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
@@ -724,7 +724,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: calc(
-    100svh - 32px
+    var(--vvh, 100svh) - 32px
     - env(safe-area-inset-top, 0px)
     - env(safe-area-inset-bottom, 0px)
   );

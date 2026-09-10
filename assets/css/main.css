@@ -24,7 +24,9 @@ html, body {
      und das Scrollen gesperrt - in In-App-Browsern, die ihre Leisten ueber
      die Seite legen und die volle Hoehe melden, wurde der Kopfbereich damit
      unerreichbar. Fliesst die Seite normal, kann nichts unerreichbar werden. */
-  min-height: 100%;
+  /* Ausdruecklich KEINE Mindesthoehe: 100% wuerde sich auf das gemeldete
+     Fenster beziehen und die Seite wieder zu hoch machen. Die Hoehe gibt
+     allein .app anhand des sichtbaren Ausschnitts vor. */
   overscroll-behavior-y: contain;   /* kein Federn, kein Ziehen zum Neuladen */
   touch-action: manipulation;       /* kein Doppeltipp-Zoom */
   -webkit-text-size-adjust: 100%;
@@ -54,7 +56,8 @@ body {
 }
 
 .app {
-  min-height: 100svh;
+  /* --vvh ist der wirklich sichtbare Ausschnitt, gemessen in app.vue. */
+  min-height: var(--vvh, 100svh);
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
