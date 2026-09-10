@@ -63,7 +63,7 @@ const pages = computed<Page[]>(() => [
   },
   {
     art: 'schatz',
-    title: 'Die Truhe geht auf …',
+    title: 'Er macht die<br>Truhe auf!',
     text: 'Dein eigenes Solitaire-Deck. ✨'
   }
 ])
@@ -122,8 +122,12 @@ function onSwipeEnd(e: PointerEvent) {
 /* ---------------- Boop the snoot ---------------- */
 const boops = ref(0)
 const boopReaktion = ref('')
-const boopHerzen = ref<{ id: number; left: number; rot: number }[]>([])
-let herzId = 0
+interface Knall { id: number; wort: string; left: number; top: number; rot: number; farbe: string }
+const knaller = ref<Knall[]>([])
+let knallId = 0
+
+const COMIC_WORTE = ['BAMM!', 'POW!', 'BOOP!', 'PENG!', 'ZACK!', 'WHAM!', 'BOING!', 'PUFF!', 'KAWUMM!']
+const COMIC_FARBEN = ['#ffd76e', '#ff8fc4', '#7bdff2', '#ffb3d8', '#ffe27a']
 const timers: ReturnType<typeof setTimeout>[] = []
 
 const BOOPS_NOETIG = 30
@@ -146,18 +150,25 @@ function spruchFuer(n: number) {
   return s
 }
 
-function boop() {
+function boop(e?: MouseEvent) {
   if (boops.value >= BOOPS_NOETIG) return
   boops.value++
   boopReaktion.value = spruchFuer(boops.value)
   play('foundation')
-  navigator.vibrate?.(12)
+  if (e?.isTrusted) navigator.vibrate?.(12)
 
-  const id = herzId++
-  boopHerzen.value.push({ id, left: 30 + Math.random() * 40, rot: Math.random() * 50 - 25 })
+  const id = knallId++
+  knaller.value.push({
+    id,
+    wort: COMIC_WORTE[Math.floor(Math.random() * COMIC_WORTE.length)]!,
+    left: 8 + Math.random() * 62,
+    top: 6 + Math.random() * 54,
+    rot: Math.random() * 34 - 17,
+    farbe: COMIC_FARBEN[Math.floor(Math.random() * COMIC_FARBEN.length)]!
+  })
   timers.push(setTimeout(() => {
-    boopHerzen.value = boopHerzen.value.filter(h => h.id !== id)
-  }, 900))
+    knaller.value = knaller.value.filter(k => k.id !== id)
+  }, 700))
 
   // Beim letzten Mal war es dann doch zu fest …
   if (boops.value === BOOPS_NOETIG) {
@@ -169,11 +180,11 @@ function boop() {
 
 /* ---------------- Leckerli ---------------- */
 const leckerliGegeben = ref(false)
-function leckerli() {
+function leckerli(e?: MouseEvent) {
   if (leckerliGegeben.value) return
   leckerliGegeben.value = true
   play('win')
-  navigator.vibrate?.(20)
+  if (e?.isTrusted) navigator.vibrate?.(20)
   timers.push(setTimeout(next, 1400))
 }
 
@@ -237,15 +248,20 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
           <!-- Hund auf der Truhe -->
           <template v-else-if="p.art === 'boop'">
             <h2 class="compact" v-html="p.title" />
-            <button class="snoot" :class="{ weg: boops >= 3 }" @click.stop="boop">
+            <button class="snoot" :class="{ weg: boops >= BOOPS_NOETIG }" @click.stop="boop($event)">
               <img :src="p.img" alt="" draggable="false">
               <span v-if="!boops" class="nose">🐽</span>
               <span
-                v-for="h in boopHerzen"
-                :key="h.id"
-                class="boop-heart"
-                :style="{ left: `${h.left}%`, transform: `rotate(${h.rot}deg)` }"
-              >💗</span>
+                v-for="k in knaller"
+                :key="k.id"
+                class="comic"
+                :style="{
+                  left: `${k.left}%`,
+                  top: `${k.top}%`,
+                  '--rot': `${k.rot}deg`,
+                  '--farbe': k.farbe
+                }"
+              >{{ k.wort }}</span>
             </button>
             <p class="script hinweis">{{ boopReaktion || '' }}</p>
             <p v-if="!boops" class="script anleitung" v-html="p.text" />
@@ -264,7 +280,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
             </div>
             <p v-if="!leckerliGegeben" class="script anleitung" v-html="p.text" />
             <p v-else class="script anleitung">Schon viel besser. 🥰</p>
-            <button v-if="!leckerliGegeben" class="leckerli" @click.stop="leckerli">
+            <button v-if="!leckerliGegeben" class="leckerli" @click.stop="leckerli($event)">
               🦴 Leckerli geben
             </button>
           </template>
@@ -274,9 +290,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
             <h2 class="compact" v-html="p.title" />
             <div class="truhe">
               <span class="strahlen" />
-              <span class="deckel" />
-              <span class="karte k1" /><span class="karte k2" /><span class="karte k3" />
-              <span class="kiste" />
+              <img src="/treasure-open.webp" alt="" draggable="false">
             </div>
             <p class="script anleitung" v-html="p.text" />
             <button class="btn btn-primary start" @click.stop="finish">Los geht's 🎉</button>
@@ -442,14 +456,29 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
   50%      { opacity: .9; transform: translate(-50%, -62%) scale(1.15); }
 }
-.boop-heart {
-  position: absolute; bottom: 45%;
-  font-size: 20px; pointer-events: none;
-  animation: boop-rise .9s ease-out forwards;
+/* Comic-Knaller beim Anstupsen */
+.comic {
+  position: absolute; z-index: 5;
+  pointer-events: none;
+  display: grid; place-items: center;
+  padding: 15px 13px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800; font-size: 15px; letter-spacing: .5px;
+  color: #4a1026;
+  background: var(--farbe);
+  clip-path: polygon(
+    50% 0%, 61% 20%, 80% 9%, 76% 31%, 98% 35%, 82% 50%,
+    98% 65%, 76% 69%, 80% 91%, 61% 80%, 50% 100%, 39% 80%,
+    20% 91%, 24% 69%, 2% 65%, 18% 50%, 2% 35%, 24% 31%, 20% 9%, 39% 20%
+  );
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .55);
+  animation: knall .7s cubic-bezier(.3, 1.5, .5, 1) forwards;
 }
-@keyframes boop-rise {
-  from { opacity: 1; }
-  to   { opacity: 0; translate: 0 -70px; }
+@keyframes knall {
+  0%   { opacity: 0; transform: rotate(var(--rot)) scale(.2); }
+  35%  { opacity: 1; transform: rotate(var(--rot)) scale(1.18); }
+  60%  { opacity: 1; transform: rotate(var(--rot)) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--rot)) scale(1.05) translateY(-10px); }
 }
 
 /* ---------- Aua ---------- */
@@ -482,54 +511,23 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 /* ---------- Schatztruhe ---------- */
 .truhe {
   position: relative;
-  width: 165px; height: 125px;
-  margin: 10px 0 2px;
+  width: 88%; max-width: 215px;
+  margin: 8px 0 0;
+  display: grid; place-items: center;
+  animation: truhe-auf .7s cubic-bezier(.3, 1.4, .5, 1) backwards;
 }
+@keyframes truhe-auf {
+  from { opacity: 0; transform: scale(.72) translateY(14px); }
+}
+.truhe img { width: 100%; display: block; object-fit: contain; position: relative; z-index: 1; }
 .strahlen {
-  position: absolute; left: 50%; top: 42%;
-  width: 190px; height: 190px; margin: -95px 0 0 -95px;
-  background: radial-gradient(circle, rgba(255, 215, 110, .85) 0%, rgba(255, 215, 110, .3) 38%, transparent 66%);
+  position: absolute; left: 50%; top: 52%;
+  width: 260px; height: 260px; margin: -130px 0 0 -130px;
+  background: radial-gradient(circle, rgba(255, 215, 110, .85) 0%, rgba(255, 215, 110, .28) 40%, transparent 68%);
   animation: leuchten 2.6s ease-in-out infinite;
 }
-@keyframes leuchten { 50% { transform: scale(1.12); opacity: .8; } }
+@keyframes leuchten { 50% { transform: scale(1.12); opacity: .75; } }
 
-.kiste, .deckel {
-  position: absolute; left: 50%;
-  width: 132px; margin-left: -66px;
-  background: linear-gradient(180deg, #a9702f, #7c4a18);
-  border: 3px solid #e0a838;
-  box-sizing: border-box;
-}
-.kiste { bottom: 0; height: 62px; border-radius: 6px 6px 10px 10px; }
-.deckel {
-  top: 18px; height: 34px;
-  border-radius: 16px 16px 4px 4px;
-  transform-origin: 50% 100%;
-  animation: deckel-auf .9s cubic-bezier(.3, .9, .4, 1) forwards;
-}
-@keyframes deckel-auf {
-  from { transform: rotateX(0deg); }
-  to   { transform: rotateX(-58deg) translateY(-6px); }
-}
-
-/* die Karten im Inneren */
-.karte {
-  position: absolute; left: 50%; bottom: 42px;
-  width: 34px; height: 48px; margin-left: -17px;
-  border-radius: 6px;
-  border: 2px solid #fff;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,.25) 0 14%, transparent 15%),
-    linear-gradient(160deg, #ff7ab8, var(--pink-500));
-  box-shadow: 0 4px 10px rgba(122, 18, 70, .3);
-  animation: karte-raus .8s cubic-bezier(.3, .9, .4, 1) backwards;
-}
-.k1 { animation-delay: .35s; transform: translate(-34px, -22px) rotate(-20deg); }
-.k2 { animation-delay: .5s;  transform: translateY(-38px) rotate(2deg); }
-.k3 { animation-delay: .65s; transform: translate(34px, -22px) rotate(20deg); }
-@keyframes karte-raus {
-  from { transform: translateY(10px) rotate(0deg) scale(.7); opacity: 0; }
-}
 .start { margin-top: 14px; }
 
 /* ---------- Deckel der Karte ---------- */
@@ -598,7 +596,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .skip:hover { opacity: 1; text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .hint, .confetti, .leckerli, .strahlen { animation: none; }
+  .card, .hint, .confetti, .leckerli, .strahlen, .truhe { animation: none; }
   .cover, .page, .snoot { transition-duration: .01ms; }
 }
 </style>
