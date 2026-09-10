@@ -120,6 +120,8 @@ function onSwipeStart(e: PointerEvent) {
 function onSwipeEnd(e: PointerEvent) {
   if (!swipe.active) return
   swipe.active = false
+  // Solange der Deckel zu ist, wird nicht geblättert - erst aufklappen.
+  if (!opened.value) return
   if (gesperrt.value) return
   const dx = e.clientX - swipe.x
   if (Math.abs(dx) < 45) return
