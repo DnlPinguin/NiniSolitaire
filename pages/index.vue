@@ -973,7 +973,7 @@ onBeforeUnmount(() => {
   /* fest am unteren Bildschirmrand, nicht im Textfluss */
   position: fixed; z-index: 40;
   left: 50%; transform: translateX(-50%);
-  bottom: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   width: min(868px, calc(100vw - 32px));
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 6px;
