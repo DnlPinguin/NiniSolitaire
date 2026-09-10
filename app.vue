@@ -1,46 +1,4 @@
 <script setup lang="ts">
-/**
- * Oeffnet iOS die Seite aus einer anderen App (WhatsApp, Notizen), zeichnet
- * Safari den Seitenanfang hinter seine Adressleiste. Am Geraet gemessen sind
- * das rund 53 Punkte - und kein Wert verraet es: Die Seite meldet dann
- * "app top 0, scrollY 0" und ist nicht einmal scrollbar.
- *
- * Erkennbar ist der Zustand aber indirekt: Safari zeigt dabei mehr Leisten
- * als sonst (Rueckkehr-Leiste plus volle Adressleiste), das Fenster ist
- * also deutlich niedriger als der Bildschirm. Nach Minimieren und
- * Wiederoeffnen waechst es wieder - dann sitzt die Seite richtig und der
- * Abstand verschwindet von selbst.
- */
-const KOPFABSTAND = 60      // Punkte, gemessen 53 plus Reserve
-const LEISTEN_SCHWELLE = 130 // ab so viel verdeckter Hoehe gilt der Zustand
-
-function pruefeKopfabstand() {
-  const bildschirm = window.screen?.height ?? 0
-  const verdeckt = bildschirm - window.innerHeight
-  const noetig =
-    window.innerWidth <= 560 && bildschirm > 0 && verdeckt > LEISTEN_SCHWELLE
-
-  document.documentElement.style.setProperty(
-    '--kopfabstand',
-    noetig ? `${KOPFABSTAND}px` : '0px'
-  )
-}
-
-onMounted(() => {
-  pruefeKopfabstand()
-  window.addEventListener('resize', pruefeKopfabstand)
-  window.addEventListener('orientationchange', pruefeKopfabstand)
-  window.addEventListener('pageshow', pruefeKopfabstand)
-  document.addEventListener('visibilitychange', pruefeKopfabstand)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', pruefeKopfabstand)
-  window.removeEventListener('orientationchange', pruefeKopfabstand)
-  window.removeEventListener('pageshow', pruefeKopfabstand)
-  document.removeEventListener('visibilitychange', pruefeKopfabstand)
-})
-
 /* Messanzeige, nur mit ?debug=1 in der Adresse sichtbar. */
 const zeigeWerte = ref(false)
 const werte = ref('')
