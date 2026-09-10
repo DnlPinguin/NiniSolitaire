@@ -520,7 +520,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="container">
+  <main class="container" :class="{ 'stufe-test': STUFE === 1 }">
+    <!-- Fehlersuche Stufe 1: zeigt unmissverstaendlich, wo die Seite beginnt
+         und endet. Sieht man den gruenen Streifen nicht, ist der Seitenanfang
+         verdeckt. -->
+    <div v-if="STUFE === 1" class="marke oben">▲ SEITENANFANG</div>
+
     <header class="topbar">
       <!-- Kein Hub mehr — statt "Zurück" steht hier der Schriftzug.
            Zum Reaktivieren des Hubs:
@@ -666,6 +671,8 @@ onBeforeUnmount(() => {
         <PlayingCard :card="card" />
       </div>
     </div>
+
+    <div v-if="STUFE === 1" class="marke unten">▼ SEITENENDE</div>
 
     <nav class="actions">
       <button class="action" :disabled="!canUndo" @click="undo">

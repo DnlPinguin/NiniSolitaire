@@ -20,7 +20,8 @@ function werteSammeln() {
 }
 
 onMounted(() => {
-  if (typeof location !== 'undefined' && location.search.includes('debug=1')) {
+  // In der Testfassung immer sichtbar, damit ein Screenshot reicht.
+  if (true) {
     zeigeWerte.value = true
     werteSammeln()
     setInterval(werteSammeln, 400)

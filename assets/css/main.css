@@ -130,3 +130,8 @@ a { color: inherit; text-decoration: none; }
   transition: scale .15s ease;
 }
 .futter-zeiger.treffer { scale: 1.3; }
+
+/* Fehlersuche Stufe 1: Die Seite soll nur so hoch sein wie ihr Inhalt. */
+.app:has(.stufe-test) {
+  min-height: 0;
+}
