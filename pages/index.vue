@@ -295,6 +295,54 @@ function onHint() {
   if (!useHint()) showToast('Kein Zug möglich – zieh eine Karte 💗')
 }
 
+/* ---------------- Automatisch ablegen ----------------
+ * Sind alle Karten offen und Stapel wie Ablage leer, ist die Partie
+ * praktisch gewonnen - man muesste nur noch stur ablegen. Das uebernimmt
+ * das Spiel dann selbst, Karte fuer Karte, und geht danach in die
+ * Gewinn-Kaskade ueber.
+ */
+const autoLaeuft = ref(false)
+const AUTO_TAKT = 110   // ms zwischen zwei Karten
+
+function autoMoeglich() {
+  if (autoLaeuft.value || won.value) return false
+  if (stock.value.length || waste.value.length) return false
+  if (!tableau.value.some(spalte => spalte.length)) return false
+  return tableau.value.every(spalte => spalte.every(karte => karte.faceUp))
+}
+
+function autoAblegen() {
+  if (autoLaeuft.value) return
+  autoLaeuft.value = true
+  showToast('Alles offen – wird automatisch abgelegt ✨')
+
+  const schritt = () => {
+    if (won.value) { autoLaeuft.value = false; return }
+
+    let gelegt = false
+    for (let i = 0; i < tableau.value.length && !gelegt; i++) {
+      const spalte = tableau.value[i]!
+      if (!spalte.length) continue
+      gelegt = sendToFoundation({ type: 'tableau', index: i, cardIndex: spalte.length - 1 })
+    }
+
+    if (!gelegt) { autoLaeuft.value = false; return }
+    dealTimers.push(setTimeout(schritt, AUTO_TAKT))
+  }
+  dealTimers.push(setTimeout(schritt, 420))
+}
+
+// Nach jeder Aenderung am Spielstand pruefen - also auch direkt nachdem
+// eine geteilte Stellung geladen oder neu ausgeteilt wurde.
+const spielstand = computed(() =>
+  [
+    stock.value.length,
+    waste.value.length,
+    ...tableau.value.map(spalte => spalte.length)
+  ].join(',')
+)
+watch(spielstand, () => { if (autoMoeglich()) autoAblegen() }, { flush: 'post' })
+
 /* ---------------- Gewinn: Kartenkaskade ---------------- */
 const showWin = ref(false)
 
