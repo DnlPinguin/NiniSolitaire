@@ -970,11 +970,12 @@ onBeforeUnmount(() => {
 
 /* ---------- action bar ---------- */
 .actions {
-  /* fest am unteren Bildschirmrand, nicht im Textfluss */
-  position: fixed; z-index: 40;
+  /* Am sichtbaren Bereich verankert (.app), nicht am gemeldeten Fenster -
+     sonst rutscht die Leiste in In-App-Browsern unter deren Werkzeugleiste. */
+  position: absolute; z-index: 40;
   left: 50%; transform: translateX(-50%);
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  width: min(868px, calc(100vw - 32px));
+  bottom: 14px;
+  width: min(868px, calc(100% - 32px));
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin-top: 10px;
@@ -1006,7 +1007,7 @@ onBeforeUnmount(() => {
 
 /* ---------- toast ---------- */
 .toast {
-  position: fixed; left: 50%; bottom: 108px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: 108px; transform: translateX(-50%);
   z-index: 65;
   background: rgba(122,18,70,.92); color: #fff;
   padding: 12px 22px; border-radius: 999px;
@@ -1025,7 +1026,7 @@ onBeforeUnmount(() => {
 }
 
 /* ---------- win ---------- */
-.win { position: fixed; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
+.win { position: absolute; inset: 0; z-index: 70; background: rgba(122,18,70,.55); backdrop-filter: blur(5px); display: grid; place-items: center; }
 .win-card {
   background: var(--card-solid); color: var(--plum);
   padding: 34px 46px; border-radius: var(--radius);

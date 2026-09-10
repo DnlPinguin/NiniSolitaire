@@ -63,6 +63,9 @@ body {
   top: var(--app-top, 0px);
   height: var(--app-h, 100svh);
   overflow: hidden;
+  /* Mit viewport-fit=cover meldet der Browser, wie viel Platz seine Leisten
+     und der Notch verdecken - hier wird dieser Platz freigehalten. */
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background:
     radial-gradient(700px 500px at 90% 8%, #ffd0e6, transparent 70%),

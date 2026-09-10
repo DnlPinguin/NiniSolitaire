@@ -16,24 +16,48 @@ function passeAnSichtfeld() {
   wurzel.style.setProperty('--app-top', `${Math.round(versatz)}px`)
 }
 
+/**
+ * Beim Verkleinern und Wiederoeffnen misst der Browser von sich aus neu -
+ * deshalb sitzt die Seite danach richtig. Genau diese Neumessung loesen wir
+ * hier selbst aus: bei jeder Gelegenheit, bei der die Seite (wieder) in den
+ * Vordergrund kommt, und zusaetzlich mehrfach kurz nach dem Aufbau.
+ */
+let nachmessen: ReturnType<typeof setTimeout>[] = []
+
+function messeMehrfach() {
+  nachmessen.forEach(clearTimeout)
+  nachmessen = [0, 60, 250, 600, 1200, 2000].map(ms =>
+    setTimeout(passeAnSichtfeld, ms)
+  )
+}
+
 onMounted(() => {
-  passeAnSichtfeld()
+  // Ein kurzer Stups setzt einen etwaigen Versatz zurueck, den In-App-Browser
+  // beim Oeffnen aus einer anderen App mitbringen.
+  window.scrollTo(0, 0)
+  messeMehrfach()
+
   const vv = window.visualViewport
   vv?.addEventListener('resize', passeAnSichtfeld)
   vv?.addEventListener('scroll', passeAnSichtfeld)
   window.addEventListener('resize', passeAnSichtfeld)
-  window.addEventListener('orientationchange', passeAnSichtfeld)
-  // Manche Browser melden erst kurz nach dem Aufbau die richtigen Werte.
-  setTimeout(passeAnSichtfeld, 300)
-  setTimeout(passeAnSichtfeld, 1200)
+  window.addEventListener('orientationchange', messeMehrfach)
+  // pageshow feuert auch, wenn die Seite aus dem Ruhespeicher zurueckkommt
+  window.addEventListener('pageshow', messeMehrfach)
+  window.addEventListener('focus', messeMehrfach)
+  document.addEventListener('visibilitychange', messeMehrfach)
 })
 
 onBeforeUnmount(() => {
+  nachmessen.forEach(clearTimeout)
   const vv = window.visualViewport
   vv?.removeEventListener('resize', passeAnSichtfeld)
   vv?.removeEventListener('scroll', passeAnSichtfeld)
   window.removeEventListener('resize', passeAnSichtfeld)
-  window.removeEventListener('orientationchange', passeAnSichtfeld)
+  window.removeEventListener('orientationchange', messeMehrfach)
+  window.removeEventListener('pageshow', messeMehrfach)
+  window.removeEventListener('focus', messeMehrfach)
+  document.removeEventListener('visibilitychange', messeMehrfach)
 })
 
 /*
