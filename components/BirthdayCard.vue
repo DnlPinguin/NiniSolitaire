@@ -105,6 +105,12 @@ function back() {
   play('flip')
 }
 
+// Auf den Mitmach-Seiten geht es erst weiter, wenn man sie geloest hat.
+const gesperrt = computed(() => {
+  const art = pages.value[page.value]?.art
+  return art === 'boop' || art === 'aua'
+})
+
 // Wischen
 const swipe = reactive({ x: 0, active: false })
 function onSwipeStart(e: PointerEvent) {
@@ -114,6 +120,7 @@ function onSwipeStart(e: PointerEvent) {
 function onSwipeEnd(e: PointerEvent) {
   if (!swipe.active) return
   swipe.active = false
+  if (gesperrt.value) return
   const dx = e.clientX - swipe.x
   if (Math.abs(dx) < 45) return
   dx < 0 ? next() : back()
@@ -178,14 +185,52 @@ function boop(e?: MouseEvent) {
   }
 }
 
-/* ---------------- Leckerli ---------------- */
+/* ---------------- Leckerli: auf den Hund ziehen ---------------- */
 const leckerliGegeben = ref(false)
-function leckerli(e?: MouseEvent) {
+const futter = reactive({ x: 0, y: 0, zieht: false, drueber: false })
+
+function leckerli(echt = false) {
   if (leckerliGegeben.value) return
   leckerliGegeben.value = true
   play('win')
-  if (e?.isTrusted) navigator.vibrate?.(20)
-  timers.push(setTimeout(next, 1400))
+  if (echt) navigator.vibrate?.(20)
+  timers.push(setTimeout(next, 1600))
+}
+
+/** Liegt der Punkt über dem Hund? */
+function ueberHund(x: number, y: number) {
+  const el = document.querySelector('.aua-bild')
+  if (!el) return false
+  const r = el.getBoundingClientRect()
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
+}
+
+function futterStart(e: PointerEvent) {
+  if (leckerliGegeben.value) return
+  e.preventDefault()
+  futter.zieht = true
+  futter.x = e.clientX
+  futter.y = e.clientY
+  window.addEventListener('pointermove', futterZieht)
+  window.addEventListener('pointerup', futterLos)
+  window.addEventListener('pointercancel', futterLos)
+}
+
+function futterZieht(e: PointerEvent) {
+  if (!futter.zieht) return
+  futter.x = e.clientX
+  futter.y = e.clientY
+  futter.drueber = ueberHund(e.clientX, e.clientY)
+}
+
+function futterLos(e: PointerEvent) {
+  window.removeEventListener('pointermove', futterZieht)
+  window.removeEventListener('pointerup', futterLos)
+  window.removeEventListener('pointercancel', futterLos)
+  if (!futter.zieht) return
+  futter.zieht = false
+  futter.drueber = false
+  if (ueberHund(e.clientX, e.clientY)) leckerli(e.isTrusted)
 }
 
 function finish() {
@@ -200,7 +245,12 @@ function open() {
   play('win')
 }
 
-onBeforeUnmount(() => timers.forEach(clearTimeout))
+onBeforeUnmount(() => {
+  timers.forEach(clearTimeout)
+  window.removeEventListener('pointermove', futterZieht)
+  window.removeEventListener('pointerup', futterLos)
+  window.removeEventListener('pointercancel', futterLos)
+})
 </script>
 
 <template>
@@ -261,13 +311,20 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
                   '--rot': `${k.rot}deg`,
                   '--farbe': k.farbe
                 }"
-              >{{ k.wort }}</span>
+              >
+                <svg class="stern" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <polygon
+                    :fill="k.farbe"
+                    points="50,0 61,20 80,9 76,31 98,35 82,50 98,65 76,69 80,91 61,80 50,100 39,80 20,91 24,69 2,65 18,50 2,35 24,31 20,9 39,20"
+                  />
+                </svg>
+                <b>{{ k.wort }}</b>
+              </span>
             </button>
             <p class="script hinweis">{{ boopReaktion || '' }}</p>
             <p v-if="!boops" class="script anleitung" v-html="p.text" />
             <div v-else class="boop-fortschritt">
               <div class="balken"><span :style="{ width: `${(boops / BOOPS_NOETIG) * 100}%` }" /></div>
-              <span class="zaehler">{{ boops }} / {{ BOOPS_NOETIG }}</span>
             </div>
           </template>
 
@@ -278,22 +335,25 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
               <img :src="p.img" alt="" draggable="false">
               <span v-if="leckerliGegeben" class="heil-herz">💕</span>
             </div>
-            <p v-if="!leckerliGegeben" class="script anleitung" v-html="p.text" />
+            <p v-if="!leckerliGegeben" class="script anleitung">Zieh ihm das Leckerli hin. 🦴</p>
             <p v-else class="script anleitung">Schon viel besser. 🥰</p>
-            <button v-if="!leckerliGegeben" class="leckerli" @click.stop="leckerli($event)">
-              🦴 Leckerli geben
-            </button>
+
+            <span
+              v-if="!leckerliGegeben"
+              class="futter"
+              :class="{ unsichtbar: futter.zieht }"
+              @pointerdown.stop="futterStart"
+            >🦴</span>
           </template>
 
           <!-- Die Truhe geht auf -->
           <template v-else-if="p.art === 'schatz'">
             <h2 class="compact" v-html="p.title" />
-            <div class="truhe">
+            <button class="truhe" @click.stop="finish">
               <span class="strahlen" />
               <img src="/treasure-open.webp" alt="" draggable="false">
-            </div>
+            </button>
             <p class="script anleitung" v-html="p.text" />
-            <button class="btn btn-primary start" @click.stop="finish">Los geht's 🎉</button>
           </template>
 
           <!-- normale Seite -->
@@ -303,9 +363,15 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
             <p v-if="p.text" class="script" v-html="p.text" />
           </template>
 
+          <!-- nur auf der ersten Seite: zeigen, wie es weitergeht -->
+          <span v-if="i === 0 && page === 0" class="wisch">
+            <span class="finger">👆</span>
+            <span class="script">wischen ♡</span>
+          </span>
+
           <!-- umgeknicktes Eck: weiterblättern -->
           <button
-            v-if="i < pages.length - 1"
+            v-if="i < pages.length - 1 && p.art !== 'boop' && p.art !== 'aua'"
             class="eselsohr"
             title="Weiterblättern"
             @click.stop="next"
@@ -326,6 +392,17 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
         </div>
       </div>
     </div>
+
+    <!-- Die Karte ist ein 3D-Kontext; darin waere "fixed" relativ zur Karte.
+         Deshalb haengt das gezogene Leckerli am <body>. -->
+    <Teleport to="body">
+      <span
+        v-if="futter.zieht"
+        class="futter-zeiger"
+        :class="{ treffer: futter.drueber }"
+        :style="{ left: `${futter.x}px`, top: `${futter.y}px` }"
+      >🦴</span>
+    </Teleport>
 
     <button class="skip" @click="finish">{{ opened ? 'Zum Spiel' : 'Überspringen' }}</button>
   </div>
@@ -435,7 +512,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 
 .boop-fortschritt { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .balken {
-  width: 110px; height: 7px; border-radius: 999px;
+  width: 140px; height: 7px; border-radius: 999px;
   background: rgba(246, 51, 140, .16); overflow: hidden;
 }
 .balken span {
@@ -443,7 +520,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   background: linear-gradient(90deg, var(--pink-400), var(--pink-500));
   transition: width .2s ease;
 }
-.zaehler { font-size: 12px; font-weight: 800; color: var(--pink-500); }
+
 
 .nose {
   position: absolute; left: 50%; top: 24%;
@@ -461,18 +538,19 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   position: absolute; z-index: 5;
   pointer-events: none;
   display: grid; place-items: center;
-  padding: 15px 13px;
-  font-family: 'Baloo 2', sans-serif;
-  font-weight: 800; font-size: 15px; letter-spacing: .5px;
-  color: #4a1026;
-  background: var(--farbe);
-  clip-path: polygon(
-    50% 0%, 61% 20%, 80% 9%, 76% 31%, 98% 35%, 82% 50%,
-    98% 65%, 76% 69%, 80% 91%, 61% 80%, 50% 100%, 39% 80%,
-    20% 91%, 24% 69%, 2% 65%, 18% 50%, 2% 35%, 24% 31%, 20% 9%, 39% 20%
-  );
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .55);
+  width: 84px; height: 84px;
   animation: knall .7s cubic-bezier(.3, 1.5, .5, 1) forwards;
+}
+.comic .stern {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.comic b {
+  position: relative;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800; font-size: 14px; letter-spacing: .3px;
+  color: #4a1026;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .55);
 }
 @keyframes knall {
   0%   { opacity: 0; transform: rotate(var(--rot)) scale(.2); }
@@ -494,23 +572,29 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   60%  { opacity: 1; transform: scale(1.25); }
   to   { opacity: 1; transform: scale(1); }
 }
-.leckerli {
-  margin-top: 14px; border: 0; cursor: pointer;
-  font: inherit; font-weight: 800; font-size: 15px;
-  padding: 12px 22px; border-radius: 999px;
-  background: linear-gradient(180deg, #ffd76e, #f5b73c); color: #6b3d05;
-  box-shadow: 0 8px 18px rgba(214, 145, 20, .38);
-  touch-action: manipulation;
-  animation: wackel 1.8s ease-in-out infinite;
+/* das Leckerli zum Ziehen */
+.futter {
+  margin-top: 10px;
+  font-size: 34px; line-height: 1;
+  cursor: grab; touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  filter: drop-shadow(0 5px 8px rgba(122, 18, 70, .3));
+  animation: futter-wackel 1.8s ease-in-out infinite;
+  z-index: 8;
 }
-@keyframes wackel {
-  0%, 100% { transform: rotate(-2deg); }
-  50%      { transform: rotate(2deg) translateY(-2px); }
+.futter.unsichtbar { opacity: .18; }
+@keyframes futter-wackel {
+  0%, 100% { transform: rotate(-7deg); }
+  50%      { transform: rotate(7deg) translateY(-3px); }
 }
+/* der Hund freut sich schon, wenn das Leckerli drüber schwebt */
+.aua-bild { transition: transform .2s ease; }
 
 /* ---------- Schatztruhe ---------- */
 .truhe {
   position: relative;
+  border: 0; background: none; padding: 0; cursor: pointer;
+  touch-action: manipulation;
   width: 88%; max-width: 215px;
   margin: 8px 0 0;
   display: grid; place-items: center;
@@ -587,6 +671,22 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   to   { transform: translateY(-105vh) rotate(220deg); opacity: 0; }
 }
 
+/* Wisch-Hinweis */
+.wisch {
+  position: absolute; left: 0; right: 0; bottom: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  pointer-events: none;
+}
+.wisch .script { font-size: 15px; color: var(--pink-400); }
+.finger {
+  font-size: 19px;
+  animation: wisch-weg 1.9s ease-in-out infinite;
+}
+@keyframes wisch-weg {
+  0%, 100% { transform: translateX(9px); opacity: .35; }
+  40%      { transform: translateX(-9px); opacity: 1; }
+}
+
 .skip {
   position: absolute; bottom: 26px;
   border: 0; background: none; cursor: pointer;
@@ -596,7 +696,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .skip:hover { opacity: 1; text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .hint, .confetti, .leckerli, .strahlen, .truhe { animation: none; }
+  .card, .hint, .confetti, .futter, .strahlen, .truhe, .finger { animation: none; }
   .cover, .page, .snoot { transition-duration: .01ms; }
 }
 </style>

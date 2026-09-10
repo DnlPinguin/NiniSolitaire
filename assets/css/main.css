@@ -91,3 +91,15 @@ a { color: inherit; text-decoration: none; }
   z-index: 55;
   pointer-events: none;
 }
+
+/* Das gezogene Leckerli haengt am <body>, damit es exakt am Finger klebt. */
+.futter-zeiger {
+  position: fixed;
+  z-index: 120;
+  font-size: 38px; line-height: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  filter: drop-shadow(0 6px 10px rgba(122, 18, 70, .35));
+  transition: scale .15s ease;
+}
+.futter-zeiger.treffer { scale: 1.3; }
