@@ -5,11 +5,39 @@
 const emit = defineEmits<{ done: [] }>()
 const { play } = useSounds()
 
-const pages = [
+// Nini: 11. September 1997
+const GEBURTSJAHR = 1997
+const ALTER_JETZT = 29          // Stand 2026, dient auch als Wert fuers Server-Rendering
+
+// Das Alter, das sie in diesem Kalenderjahr wird. Erst nach dem Mounten
+// berechnet, damit Server und Browser beim Hydrieren nicht auseinanderlaufen.
+const alter = ref(ALTER_JETZT)
+onMounted(() => {
+  alter.value = new Date().getFullYear() - GEBURTSJAHR
+})
+
+const de = (n: number) => Math.round(n).toLocaleString('de-DE')
+const mrd = (n: number) => (n / 1e9).toLocaleString('de-DE', { maximumFractionDigits: 1 })
+
+const funFacts = computed(() => {
+  const ALTER = alter.value
+  const TAGE = ALTER * 365.25
+  return [
+  { icon: '🐶', text: `In Hundejahren wärst du <b>${ALTER * 7}</b>.` },
+  { icon: '🌞', text: `<b>${de(TAGE)}</b> Tage – und jeder einzelne zählt.` },
+  { icon: '💗', text: `Dein Herz hat rund <b>${mrd(TAGE * 24 * 60 * 70)}</b> Milliarden Mal geschlagen.` },
+  { icon: '🪐', text: `<b>${ALTER}</b> Runden um die Sonne – rund <b>${mrd(ALTER * 940e6)}</b> Milliarden Kilometer.` },
+  { icon: '😴', text: `Etwa <b>${de(ALTER / 3)}</b> Jahre davon hast du verschlafen. Verdient.` }
+  ]
+})
+
+interface Page { img?: string; title: string; text?: string; facts?: boolean }
+
+const pages = computed<Page[]>(() => [
   {
     img: '/pups/pup-11.webp',
     title: 'Alles Gute zum<br>Geburtstag, Nini!',
-    text: 'Heute wird gefeiert. ♡'
+    text: '11. September – heute wird gefeiert. ♡'
   },
   {
     img: '/pups/pup-18.webp',
@@ -17,16 +45,20 @@ const pages = [
     text: 'Falls du mal ein bisschen<br>Ablenkung brauchst.'
   },
   {
+    title: `${alter.value} Jahre –<br>in Zahlen`,
+    facts: true
+  },
+  {
     img: '/pups/pup-25.webp',
     title: 'Ein Spiel,<br>ganz viele Hunde',
     text: 'Und ganz viel Glück für dich. 🐾'
   }
-]
+])
 
 const opened = ref(false)
 const page = ref(0)
 const leaving = ref(false)
-const isLast = computed(() => page.value === pages.length - 1)
+const isLast = computed(() => page.value === pages.value.length - 1)
 
 interface Confetti { id: number; left: number; delay: number; dur: number; size: number; glyph: string }
 const confetti = ref<Confetti[]>([])
@@ -100,9 +132,16 @@ function finish() {
           :class="{ turned: i < page }"
           :style="{ zIndex: pages.length - i }"
         >
-          <img class="pup" :src="p.img" alt="" draggable="false">
-          <h2 v-html="p.title" />
-          <p class="script" v-html="p.text" />
+          <img v-if="p.img" class="pup" :src="p.img" alt="" draggable="false">
+          <h2 :class="{ compact: p.facts }" v-html="p.title" />
+          <p v-if="p.text" class="script" v-html="p.text" />
+
+          <ul v-if="p.facts" class="facts">
+            <li v-for="(f, fi) in funFacts" :key="fi">
+              <span class="fact-icon">{{ f.icon }}</span>
+              <span v-html="f.text" />
+            </li>
+          </ul>
 
           <div class="nav">
             <button v-if="i > 0" class="page-btn ghost" @click="back">←</button>
@@ -181,6 +220,22 @@ function finish() {
   color: var(--pink-600);
 }
 .page .script { margin: 6px 0 0; font-size: 16px; line-height: 1.3; color: var(--pink-400); }
+
+.facts {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0 2px;
+  display: flex; flex-direction: column; gap: 9px;
+  text-align: left;
+}
+.facts li {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: 13px; line-height: 1.35;
+  color: var(--ink-soft); font-weight: 600;
+}
+.facts :deep(b) { color: var(--pink-600); font-weight: 800; }
+.fact-icon { font-size: 16px; line-height: 1.1; flex: none; }
+h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 
 .nav { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
 .page-btn {
