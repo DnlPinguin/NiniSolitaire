@@ -31,7 +31,7 @@ const funFacts = computed(() => {
   ]
 })
 
-interface Page { img?: string; title: string; text?: string; facts?: boolean }
+interface Page { img?: string; title: string; text?: string; facts?: boolean; boop?: boolean }
 
 const pages = computed<Page[]>(() => [
   {
@@ -50,8 +50,9 @@ const pages = computed<Page[]>(() => [
   },
   {
     img: '/pups/pup-25.webp',
-    title: 'Ein Spiel,<br>ganz viele Hunde',
-    text: 'Und ganz viel Glück für dich. 🐾'
+    title: 'Ich hoffe es<br>gefällt dir, Bebi',
+    text: 'Ich wusste nicht genau,<br>was du willst. ♡',
+    boop: true
   }
 ])
 
@@ -78,6 +79,39 @@ onMounted(() => {
     glyph: ['💖', '💕', '🩷', '♡', '✨'][i % 5]!
   }))
 })
+
+/* ---------------- Boop the snoot ---------------- */
+const boops = ref(0)
+const boopReaktion = ref('')
+const boopHerzen = ref<{ id: number; left: number; rot: number }[]>([])
+let herzId = 0
+let boopTimer: ReturnType<typeof setTimeout> | null = null
+
+const REAKTIONEN = [
+  'Boop! 🐽',
+  'Nochmal! 💕',
+  'Er mag das ☺️',
+  'Schwanzwedeln 🐕',
+  'Bester Boop 🏆'
+]
+
+function boop() {
+  boops.value++
+  boopReaktion.value = REAKTIONEN[Math.min(boops.value - 1, REAKTIONEN.length - 1)]!
+  play('foundation')
+  navigator.vibrate?.(12)
+
+  const id = herzId++
+  boopHerzen.value.push({ id, left: 30 + Math.random() * 40, rot: Math.random() * 50 - 25 })
+  setTimeout(() => {
+    boopHerzen.value = boopHerzen.value.filter(h => h.id !== id)
+  }, 900)
+
+  if (boopTimer) clearTimeout(boopTimer)
+  boopTimer = setTimeout(() => (boopReaktion.value = ''), 1600)
+}
+
+onBeforeUnmount(() => { if (boopTimer) clearTimeout(boopTimer) })
 
 function open() {
   if (opened.value) return
@@ -132,9 +166,31 @@ function finish() {
           :class="{ turned: i < page }"
           :style="{ zIndex: pages.length - i }"
         >
-          <img v-if="p.img" class="pup" :src="p.img" alt="" draggable="false">
-          <h2 :class="{ compact: p.facts }" v-html="p.title" />
-          <p v-if="p.text" class="script" v-html="p.text" />
+          <template v-if="p.boop">
+            <h2 class="compact" v-html="p.title" />
+            <p class="letter script" v-html="p.text" />
+
+            <button class="snoot" :class="{ booped: boops }" @click="boop">
+              <img :src="p.img" alt="" draggable="false">
+              <span class="nose">🐽</span>
+              <span
+                v-for="h in boopHerzen"
+                :key="h.id"
+                class="boop-heart"
+                :style="{ left: `${h.left}%`, transform: `rotate(${h.rot}deg)` }"
+              >💗</span>
+            </button>
+
+            <span class="boop-label">
+              {{ boopReaktion || (boops ? `${boops} Boops 🐾` : 'Boop the snoot 👆') }}
+            </span>
+          </template>
+
+          <template v-else>
+            <img v-if="p.img" class="pup" :src="p.img" alt="" draggable="false">
+            <h2 :class="{ compact: p.facts }" v-html="p.title" />
+            <p v-if="p.text" class="script" v-html="p.text" />
+          </template>
 
           <ul v-if="p.facts" class="facts">
             <li v-for="(f, fi) in funFacts" :key="fi">
@@ -255,6 +311,54 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   background: rgba(246, 51, 140, .22); transition: .2s;
 }
 .dots span.on { background: var(--pink-500); transform: scale(1.25); }
+
+/* ---------- Boop the snoot ---------- */
+.letter {
+  margin: 8px 0 2px !important;
+  font-size: 17px !important;
+  line-height: 1.35;
+}
+.snoot {
+  position: relative;
+  border: 0; padding: 0; margin: 6px 0 0;
+  background: none; cursor: pointer;
+  width: 52%; max-width: 150px;
+  touch-action: manipulation;
+  transition: transform .16s cubic-bezier(.34, 1.7, .5, 1);
+}
+.snoot img { width: 100%; display: block; object-fit: contain; }
+.snoot:active { transform: scale(.9) rotate(-2deg); }
+
+/* der Hinweis wippt, bis einmal gestupst wurde */
+.nose {
+  position: absolute; left: 50%; top: 34%;
+  transform: translate(-50%, -50%);
+  font-size: 20px; opacity: .0;
+  animation: nose-hint 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.snoot.booped .nose { animation: none; opacity: 0; }
+@keyframes nose-hint {
+  0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+  50%      { opacity: .85; transform: translate(-50%, -60%) scale(1.15); }
+}
+
+.boop-heart {
+  position: absolute; bottom: 40%;
+  font-size: 20px; pointer-events: none;
+  animation: boop-rise .9s ease-out forwards;
+}
+@keyframes boop-rise {
+  from { opacity: 1; }
+  to   { opacity: 0; translate: 0 -70px; }
+}
+
+.boop-label {
+  margin-top: 8px;
+  font-family: 'Caveat', cursive;
+  font-size: 19px; color: var(--pink-500); font-weight: 600;
+  min-height: 24px;
+}
 
 /* ---------- Deckel ---------- */
 .cover {
