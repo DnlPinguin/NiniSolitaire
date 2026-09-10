@@ -235,6 +235,7 @@ function beiSichtbarkeit() {
 }
 
 onMounted(() => {
+  testKnopf.value = route.query.test === '1'
   document.addEventListener('visibilitychange', beiSichtbarkeit)
   if (!showCard.value) begin()
 })
@@ -266,6 +267,21 @@ const wasteFan = computed(() =>
     top: i === arr.length - 1
   }))
 )
+
+/* ------------------------------------------------------------------
+ * Nur zum Ausprobieren: Mit ?test=1 in der Adresse erscheint unten rechts
+ * ein Knopf, der eine Stellung mit nur noch einer fehlenden Karte laedt.
+ * Ohne den Zusatz ist davon nichts zu sehen.
+ * ------------------------------------------------------------------ */
+const FAST_GEWONNEN =
+  'AQMAAA0NDQwBAAAAAAAAQEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFycw'
+const testKnopf = ref(false)
+
+function siegVorbereiten() {
+  if (loadCode(FAST_GEWONNEN)) {
+    showToast('Nur noch eine Karte – Doppeltipp auf den König 🏆')
+  }
+}
 
 const toast = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -664,6 +680,10 @@ onBeforeUnmount(() => {
 
     <BirthdayCard v-if="showCard" @done="onCardDone" />
 
+    <button v-if="testKnopf" class="testknopf" @click="siegVorbereiten">
+      🏆 Sieg testen
+    </button>
+
     <Transition name="toast">
       <div v-if="toast" class="toast">{{ toast }}</div>
     </Transition>
@@ -902,6 +922,11 @@ onBeforeUnmount(() => {
   100% { opacity: 0; }
 }
 
+/* ---------- drag ghost ---------- */
+.ghost { position: fixed; z-index: 60; pointer-events: none; width: var(--card-w); }
+.ghost-card { position: absolute; left: 0; filter: drop-shadow(0 12px 20px rgba(214,51,132,.4)); }
+.ghost-card :deep(.card) { transform: rotate(-3deg) scale(1.04); }
+
 /* ---------- Fussleiste ---------- */
 .actions {
   /* sticky statt fixed: bleibt beim Scrollen sichtbar, haengt aber im
@@ -936,6 +961,17 @@ onBeforeUnmount(() => {
   min-width: 19px; height: 19px; padding: 0 5px;
   border-radius: 999px; display: grid; place-items: center;
   border: 2px solid #ffeaf4;
+}
+
+/* ---------- Testknopf (nur mit ?test=1) ---------- */
+.testknopf {
+  position: fixed; right: 14px; bottom: 96px; z-index: 45;
+  border: 0; cursor: pointer;
+  font: inherit; font-weight: 800; font-size: 13px;
+  padding: 10px 16px; border-radius: 999px;
+  background: #7a1246; color: #fff;
+  box-shadow: 0 8px 18px rgba(122, 18, 70, .35);
+  touch-action: manipulation;
 }
 
 /* ---------- toast ---------- */
