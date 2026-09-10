@@ -3,6 +3,17 @@ import { RANK_LABELS, isRed, pupSrcFor, type Card, type Source, type Suit } from
 
 useHead({ title: 'Solitaire · Ninis Spieleecke' })
 
+/* ------------------------------------------------------------------
+ * FEHLERSUCHE: Aufbau stufenweise zuschalten.
+ *
+ *   1 = nur Kopfleiste und Fussleiste
+ *   2 = zusaetzlich das Spielfeld
+ *   3 = zusaetzlich die Geburtstagskarte (also alles)
+ *
+ * Zum Weiterschalten einfach die Zahl erhoehen.
+ * ------------------------------------------------------------------ */
+const STUFE = 1
+
 const { play, muted, toggleMute } = useSounds()
 
 const {
@@ -194,7 +205,7 @@ const cardSeen = useCookie<string | null>('nini-geburtstagskarte', {
   sameSite: 'lax'
 })
 // Geteilte Links führen direkt ins Spiel, ohne Karte.
-const showCard = ref(!cardSeen.value && !route.query.g)
+const showCard = ref(STUFE >= 3 && !cardSeen.value && !route.query.g)
 
 function begin() {
   const code = route.query.g
@@ -534,7 +545,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <section ref="boardRef" class="board" :class="{ collecting }">
+    <section v-if="STUFE >= 2" ref="boardRef" class="board" :class="{ collecting }">
       <div class="top-row">
         <div class="slot stock" :class="{ shuffling }">
           <template v-if="shuffling">
@@ -678,7 +689,7 @@ onBeforeUnmount(() => {
       </button>
     </nav>
 
-    <BirthdayCard v-if="showCard" @done="onCardDone" />
+    <BirthdayCard v-if="STUFE >= 3 && showCard" @done="onCardDone" />
 
     <Transition name="toast">
       <div v-if="toast" class="toast">{{ toast }}</div>
