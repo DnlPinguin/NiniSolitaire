@@ -1,0 +1,268 @@
+<script setup lang="ts">
+/**
+ * Interaktive Geburtstagskarte: antippen zum Aufklappen, dann durchblättern.
+ */
+const emit = defineEmits<{ done: [] }>()
+const { play } = useSounds()
+
+const pages = [
+  {
+    img: '/pups/pup-11.webp',
+    title: 'Alles Gute zum<br>Geburtstag, Nini!',
+    text: 'Heute wird gefeiert. ♡'
+  },
+  {
+    img: '/pups/pup-18.webp',
+    title: 'Was Kleines für dich',
+    text: 'Falls du mal ein bisschen<br>Ablenkung brauchst.'
+  },
+  {
+    img: '/pups/pup-25.webp',
+    title: 'Ein Spiel,<br>ganz viele Hunde',
+    text: 'Und ganz viel Glück für dich. 🐾'
+  }
+]
+
+const opened = ref(false)
+const page = ref(0)
+const leaving = ref(false)
+const isLast = computed(() => page.value === pages.length - 1)
+
+interface Confetti { id: number; left: number; delay: number; dur: number; size: number; glyph: string }
+const confetti = ref<Confetti[]>([])
+
+const reduced = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+onMounted(() => {
+  // Zufallswerte erst im Browser — sonst weicht der Server ab (Hydration).
+  confetti.value = Array.from({ length: 22 }, (_, i) => ({
+    id: i,
+    left: Math.round(Math.random() * 96),
+    delay: Math.round(Math.random() * 900),
+    dur: 2600 + Math.round(Math.random() * 1800),
+    size: 12 + Math.round(Math.random() * 18),
+    glyph: ['💖', '💕', '🩷', '♡', '✨'][i % 5]!
+  }))
+})
+
+function open() {
+  if (opened.value) return
+  opened.value = true
+  play('win')
+}
+
+function next() {
+  if (isLast.value) return
+  page.value++
+  play('foundation')
+}
+
+function back() {
+  if (page.value === 0) return
+  page.value--
+  play('flip')
+}
+
+function finish() {
+  if (leaving.value) return
+  leaving.value = true
+  setTimeout(() => emit('done'), reduced() ? 0 : 420)
+}
+</script>
+
+<template>
+  <div class="overlay" :class="{ leaving }">
+    <span
+      v-for="c in confetti"
+      v-show="opened"
+      :key="c.id"
+      class="confetti"
+      :style="{
+        left: `${c.left}%`,
+        animationDelay: `${c.delay}ms`,
+        animationDuration: `${c.dur}ms`,
+        fontSize: `${c.size}px`
+      }"
+    >{{ c.glyph }}</span>
+
+    <div class="stage">
+      <div class="card" :class="{ open: opened }">
+        <!-- Rückwand, damit unter der letzten Seite nichts durchscheint -->
+        <div class="sheet backdrop" />
+
+        <!-- Seiten: die aktuelle liegt oben, geblätterte klappen nach links weg -->
+        <div
+          v-for="(p, i) in pages"
+          :key="i"
+          class="sheet page"
+          :class="{ turned: i < page }"
+          :style="{ zIndex: pages.length - i }"
+        >
+          <img class="pup" :src="p.img" alt="" draggable="false">
+          <h2 v-html="p.title" />
+          <p class="script" v-html="p.text" />
+
+          <div class="nav">
+            <button v-if="i > 0" class="page-btn ghost" @click="back">←</button>
+            <button v-if="i < pages.length - 1" class="page-btn" @click="next">Weiter →</button>
+            <button v-else class="btn btn-primary start" @click="finish">Los geht's 🎉</button>
+          </div>
+
+          <div class="dots">
+            <span v-for="(_, d) in pages" :key="d" :class="{ on: d === page }" />
+          </div>
+        </div>
+
+        <!-- Deckel -->
+        <div class="cover" :style="{ zIndex: pages.length + 2 }" @click="open">
+          <div class="face front">
+            <span class="seal">💖</span>
+            <h3>Für Nini</h3>
+            <span class="script hint">Tippen zum Öffnen ♡</span>
+            <span class="ribbon" />
+          </div>
+          <div class="face back" />
+        </div>
+      </div>
+    </div>
+
+    <button class="skip" @click="finish">{{ opened ? 'Zum Spiel' : 'Überspringen' }}</button>
+  </div>
+</template>
+
+<style scoped>
+.overlay {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  background: radial-gradient(60% 50% at 50% 40%, rgba(255, 214, 236, .96), rgba(255, 198, 228, .99));
+  overflow: hidden;
+  transition: opacity .4s ease, transform .4s ease;
+}
+.overlay.leaving { opacity: 0; transform: scale(1.04); pointer-events: none; }
+
+.stage { perspective: 1400px; }
+.card {
+  position: relative;
+  width: min(330px, 82vw);
+  aspect-ratio: 3 / 4;
+  transform-style: preserve-3d;
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-10px) rotate(1deg); }
+}
+.card.open { animation: none; }
+
+/* ---------- Seiten ---------- */
+.sheet {
+  position: absolute; inset: 0;
+  border-radius: 22px;
+  background: linear-gradient(170deg, #fffdfe, #fff1f8);
+  box-shadow: 0 22px 50px rgba(214, 51, 132, .28);
+}
+.backdrop { z-index: 0; }
+.page {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 22px 18px 16px; text-align: center;
+  transform-origin: left center;
+  backface-visibility: hidden;
+  transition: transform .85s cubic-bezier(.35, .75, .25, 1);
+}
+.page.turned { transform: rotateY(-172deg); }
+
+.pup { width: 40%; max-width: 120px; object-fit: contain; }
+.page h2 {
+  margin: 8px 0 0;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: clamp(18px, 5.2vw, 23px); line-height: 1.15;
+  color: var(--pink-600);
+}
+.page .script { margin: 6px 0 0; font-size: 16px; line-height: 1.3; color: var(--pink-400); }
+
+.nav { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.page-btn {
+  border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 15px;
+  padding: 11px 20px; border-radius: 999px;
+  background: linear-gradient(180deg, var(--pink-400), var(--pink-500)); color: #fff;
+  box-shadow: 0 8px 18px rgba(246, 51, 140, .34);
+}
+.page-btn.ghost {
+  background: rgba(246, 51, 140, .1); color: var(--pink-500);
+  box-shadow: none; padding: 11px 15px;
+}
+
+.dots { display: flex; gap: 6px; margin-top: 14px; }
+.dots span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(246, 51, 140, .22); transition: .2s;
+}
+.dots span.on { background: var(--pink-500); transform: scale(1.25); }
+
+/* ---------- Deckel ---------- */
+.cover {
+  position: absolute; inset: 0;
+  transform-origin: left center; transform-style: preserve-3d;
+  cursor: pointer;
+  transition: transform 1.05s cubic-bezier(.35, .75, .25, 1);
+}
+.card.open .cover { transform: rotateY(-158deg); }
+.face {
+  position: absolute; inset: 0;
+  border-radius: 22px; backface-visibility: hidden; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+}
+.face.front {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.28) 0 16%, transparent 17%),
+    radial-gradient(circle at 82% 78%, rgba(255,255,255,.22) 0 14%, transparent 15%),
+    linear-gradient(160deg, #ff85c0, var(--pink-500) 60%, var(--pink-600));
+  box-shadow: 0 22px 50px rgba(214, 51, 132, .34);
+  color: #fff;
+}
+.face.back {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, #ffd9ec, #ffc2e0);
+  box-shadow: inset 0 0 40px rgba(214, 51, 132, .12);
+}
+.seal { font-size: 54px; filter: drop-shadow(0 6px 10px rgba(122, 18, 70, .3)); }
+.face.front h3 {
+  margin: 0; font-family: 'Baloo 2', sans-serif;
+  font-size: clamp(26px, 7vw, 34px); letter-spacing: .5px;
+}
+.hint { font-size: 18px; opacity: .92; animation: breathe 1.9s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .5; transform: translateY(2px); } }
+.ribbon {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 14px; margin-top: -7px;
+  background: rgba(255,255,255,.22);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset;
+}
+
+/* ---------- Konfetti ---------- */
+.confetti {
+  position: absolute; bottom: -40px;
+  animation-name: rise; animation-timing-function: ease-in;
+  animation-iteration-count: infinite; pointer-events: none;
+}
+@keyframes rise {
+  from { transform: translateY(0) rotate(0); opacity: 0; }
+  15%  { opacity: 1; }
+  to   { transform: translateY(-105vh) rotate(220deg); opacity: 0; }
+}
+
+.skip {
+  position: absolute; bottom: 26px;
+  border: 0; background: none; cursor: pointer;
+  font: inherit; font-weight: 700; font-size: 14px;
+  color: var(--pink-500); opacity: .75;
+}
+.skip:hover { opacity: 1; text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .hint, .confetti { animation: none; }
+  .cover, .page { transition-duration: .01ms; }
+}
+</style>
