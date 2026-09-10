@@ -1,0 +1,10 @@
+# Nuxt laeuft auf Netlify serverseitig (Functions). Das ist wichtig, weil die
+# Geburtstagskarte per Cookie entscheidet, ob sie gezeigt wird - beim rein
+# statischen Erzeugen wuerde diese Entscheidung ins HTML eingebacken.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
