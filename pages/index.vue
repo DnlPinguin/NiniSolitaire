@@ -711,24 +711,20 @@ onBeforeUnmount(() => {
   --card-w: min(
     92px,
     calc((100vw - 36px - var(--gap) * 6) / 7),
-    calc((var(--vvh, 100svh) - 210px - var(--kopfschutz, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
+    calc((100vh - 210px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
   --stack: calc(var(--card-w) * 0.33);
   --fan: calc(var(--card-w) * 0.24);
   max-width: 900px;
-  /* --kopfschutz haelt oben Platz frei. Oeffnet iOS die Seite aus einer
-     anderen App, zeichnet Safari die ersten rund 60 Punkte hinter seine
-     Adressleiste und meldet das nirgends - ohne diesen Streifen waere die
-     Kopfzeile dann unsichtbar. */
-  padding: calc(12px + var(--kopfschutz, 0px)) 16px 20px;
+  padding: 12px 16px 20px;
   /* Spalte, damit die Leiste unten sitzt, auch wenn der Inhalt kurz ist.
      Die Sicherheitsabstaende muessen abgezogen werden - sonst wird die Seite
      genau um den Notch-Abstand zu hoch und der Browser scrollt von selbst. */
   display: flex;
   flex-direction: column;
   min-height: calc(
-    var(--vvh, 100svh) - 32px - var(--kopfschutz, 0px)
+    100vh - 32px
     - env(safe-area-inset-top, 0px)
     - env(safe-area-inset-bottom, 0px)
   );

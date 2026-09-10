@@ -1,94 +1,4 @@
 <script setup lang="ts">
-/**
- * WhatsApp und Instagram zeigen Webseiten in einem Fenster, ueber das sie
- * ihre EIGENEN Bedienleisten legen. Fuer die Seite ist das unsichtbar - sie
- * haelt sich fuer bildschirmfuellend. Deshalb helfen weder svh noch dvh noch
- * die Sicherheitsabstaende: Die Seite wird hoeher als das, was man sieht,
- * und der Browser scrollt den Ueberhang von selbst weg.
- *
- * Einzig visualViewport meldet den wirklich sichtbaren Ausschnitt. Der Wert
- * landet in --vvh, an dem sich die Hoehenangaben orientieren. Weil die Seite
- * dabei normal fliesst, bleibt bei einer Fehlmessung schlimmstenfalls etwas
- * zu scrollen - unerreichbar wird nichts.
- */
-function messeSichtfeld() {
-  // Kein einzelner Wert ist verlaesslich: Beim Oeffnen aus einer anderen App
-  // meldet visualViewport zu viel (die Rueckkehr-Leiste rechnet es nicht mit),
-  // waehrend clientHeight den echten Ausschnitt kennt. Der kleinste gewinnt.
-  const kandidaten = [
-    window.visualViewport?.height,
-    document.documentElement.clientHeight,
-    window.innerHeight
-  ].filter((n): n is number => typeof n === 'number' && n > 200)
-
-  if (!kandidaten.length) return
-  const hoehe = Math.round(Math.min(...kandidaten))
-  document.documentElement.style.setProperty('--vvh', `${hoehe}px`)
-
-  // Safari kann den sichtbaren Ausschnitt verschieben, ohne zu scrollen -
-  // dann liegt unser Seitenanfang oberhalb des Sichtbaren. Diesen Versatz
-  // gleichen wir aus.
-  const versatz = Math.round(window.visualViewport?.offsetTop ?? 0)
-  document.documentElement.style.setProperty('--vvo', `${Math.max(0, versatz)}px`)
-}
-
-let messungen: ReturnType<typeof setTimeout>[] = []
-function messeMehrfach() {
-  messungen.forEach(clearTimeout)
-  // In-App-Browser melden erst nach dem Aufbau brauchbare Werte.
-  messungen = [0, 80, 300, 800, 1500, 2500].map(ms => setTimeout(messeSichtfeld, ms))
-}
-
-/**
- * Oeffnet iOS einen Link aus einer anderen App (WhatsApp, Notizen), zeichnet
- * Safari die Seite unter seine eigene Leiste - und meldet das nirgends: Alle
- * Werte (scrollY, offsetTop, clientHeight, Lage der App) sind dann korrekt,
- * trotzdem fehlt oben ein Stueck.
- *
- * Von Hand scrollen behebt es. Also macht die Seite genau das selbst: Sie
- * wird kurz ein paar Pixel hoeher gemacht, einmal angescrollt und wieder
- * zurueckgesetzt. Das zwingt Safari, seine Leisten und den Ausschnitt neu zu
- * berechnen - dasselbe, was beim Wischen von Hand passiert.
- */
-function stupsSafari() {
-  const koerper = document.body
-
-  // Erst messen, dann Safari zwingen, alles neu zu zeichnen. Das Ausblenden
-  // fuer einen Wimpernschlag verwirft den alten, falschen Aufbau - genau das,
-  // was sonst erst das Schliessen und Neuoeffnen bewirkt.
-  messeSichtfeld()
-  const vorher = koerper.style.display
-  koerper.style.display = 'none'
-  void koerper.offsetHeight        // erzwingt den Neuaufbau
-  koerper.style.display = vorher
-
-  // danach noch ein kurzer Scroll-Stups, damit Safari seine Leisten festlegt
-  const hoehe = koerper.style.minHeight
-  koerper.style.minHeight = `calc(var(--vvh, 100svh) + 3px)`
-  requestAnimationFrame(() => {
-    window.scrollTo(0, 2)
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0)
-      koerper.style.minHeight = hoehe
-      messeSichtfeld()
-    })
-  })
-}
-
-onMounted(() => {
-  messeMehrfach()
-  // mehrfach, weil Safari erst nach dem Aufbau seine Leisten festlegt
-  ;[60, 350, 900, 1800].forEach(ms => setTimeout(stupsSafari, ms))
-  const vv = window.visualViewport
-  vv?.addEventListener('resize', messeSichtfeld)
-  window.addEventListener('resize', messeSichtfeld)
-  window.addEventListener('orientationchange', messeMehrfach)
-  window.addEventListener('pageshow', () => {
-    messeMehrfach(); setTimeout(stupsSafari, 120)
-  })
-  document.addEventListener('visibilitychange', () => { messeMehrfach(); setTimeout(stupsSafari, 120) })
-})
-
 /* Messanzeige, nur mit ?debug=1 in der Adresse sichtbar. */
 const zeigeWerte = ref(false)
 const werte = ref('')
@@ -102,7 +12,6 @@ function werteSammeln() {
     `clientHeight  ${d.clientHeight}`,
     `app top/bot   ${Math.round(document.querySelector('.app')?.getBoundingClientRect().top ?? 0)} / ${Math.round(document.querySelector('.app')?.getBoundingClientRect().bottom ?? 0)}`,
     `kopf top      ${Math.round(document.querySelector('.topbar')?.getBoundingClientRect().top ?? -999)}`,
-    `--vvh         ${getComputedStyle(d).getPropertyValue('--vvh').trim() || '-'}`,
     `body          ${Math.round(document.body.getBoundingClientRect().height)}`,
     `scrollHeight  ${d.scrollHeight}   clientHeight ${d.clientHeight}`,
     `scrollY       ${Math.round(window.scrollY)}`,
@@ -116,16 +25,6 @@ onMounted(() => {
     werteSammeln()
     setInterval(werteSammeln, 400)
   }
-})
-
-onBeforeUnmount(() => {
-  messungen.forEach(clearTimeout)
-  const vv = window.visualViewport
-  vv?.removeEventListener('resize', messeSichtfeld)
-  window.removeEventListener('resize', messeSichtfeld)
-  window.removeEventListener('orientationchange', messeMehrfach)
-  window.removeEventListener('pageshow', messeMehrfach)
-  document.removeEventListener('visibilitychange', messeMehrfach)
 })
 
 /*
