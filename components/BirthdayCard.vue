@@ -286,11 +286,6 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
   width: 74%; max-width: 230px;
   object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(122, 18, 70, .34));
-  animation: dog-bob 3.4s ease-in-out infinite;
-}
-@keyframes dog-bob {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50%      { transform: translateY(-7px) rotate(1.5deg); }
 }
 .face.front h3 {
   margin: 0; font-family: 'Baloo 2', sans-serif;
@@ -327,7 +322,7 @@ h2.compact { font-size: clamp(17px, 4.8vw, 21px); }
 .skip:hover { opacity: 1; text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .hint, .confetti, .party-dog { animation: none; }
+  .card, .hint, .confetti { animation: none; }
   .cover, .page { transition-duration: .01ms; }
 }
 </style>
