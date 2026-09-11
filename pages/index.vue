@@ -635,9 +635,18 @@ onBeforeUnmount(() => {
           class="slot"
           data-drop-type="foundation"
           :data-drop-index="i"
-          @click="pile.length ? select({ type: 'foundation', index: i, cardIndex: pile.length - 1 }) : clickEmpty('foundation', i)"
+          @click="!pile.length && clickEmpty('foundation', i)"
         >
-          <PlayingCard v-if="pile.length" :card="pile[pile.length - 1]!" :hinted="isHinted('foundation', i, pile.length - 1)" />
+          <!-- Ablagekarten lassen sich zurueck aufs Feld ziehen, wie im
+               gewohnten Solitaire. Das Antippen erledigt onPointerDown mit. -->
+          <PlayingCard
+            v-if="pile.length"
+            :card="pile[pile.length - 1]!"
+            :hinted="isHinted('foundation', i, pile.length - 1)"
+            :selected="isSelected('foundation', i, pile.length - 1)"
+            :dragging="isDragged('foundation', i, pile.length - 1)"
+            @pointerdown="onPointerDown($event, { type: 'foundation', index: i, cardIndex: pile.length - 1 })"
+          />
           <div v-else class="empty foundation" :class="{ glow: isHinted('foundation', i) }">
             <span class="fsuit" :class="{ red: i === 0 || i === 2 }">{{ FOUNDATION_SUITS[i] }}</span>
           </div>
