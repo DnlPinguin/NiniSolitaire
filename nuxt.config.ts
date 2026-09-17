@@ -10,6 +10,10 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' },
         { name: 'description', content: 'Ein kleines Geburtstagsgeschenk: Solitaire mit ganz vielen Hunden.' },
         { name: 'theme-color', content: '#ffd9ec' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-title', content: 'Ninis Spieleecke' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
 
         /* Vorschau in WhatsApp, Signal, iMessage & Co.
            Absolute Adressen sind Pflicht - relative Pfade werden ignoriert.
@@ -32,7 +36,11 @@ export default defineNuxtConfig({
         { name: 'twitter:description', content: 'Ein kleines Geburtstagsgeschenk: Solitaire mit ganz vielen Hunden.' },
         { name: 'twitter:image', content: 'https://ninis-ecke.netlify.app/vorschau.jpg' }
       ],
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'apple-touch-icon', href: '/party-dog.webp' }
+      ]
     }
   }
 })

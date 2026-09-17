@@ -9,7 +9,7 @@ const { play, muted, toggleMute } = useSounds()
 const {
   stock, waste, foundations, tableau, moves, timeLabel, won,
   hintsLeft, canUndo, drawCount, lastDrawn, shareCode, loadCode,
-  newGame, drawFromStock, select, clickEmpty, sendToFoundation, isSelected,
+  newGame, drawFromStock, select, clickEmpty, sendToFoundation, autoPlace, isSelected,
   tryMove, canMove, undo, useHint, isHinted, pileFor
 } = useSolitaire({ onEvent: play })
 
@@ -296,18 +296,22 @@ function onHint() {
 }
 
 /* ---------------- Automatisch ablegen ----------------
- * Sind alle Karten offen und Stapel wie Ablage leer, ist die Partie
- * praktisch gewonnen - man muesste nur noch stur ablegen. Das uebernimmt
- * das Spiel dann selbst, Karte fuer Karte, und geht danach in die
- * Gewinn-Kaskade ueber.
+ * Sobald im Spielfeld keine verdeckte Karte mehr liegt, ist die Partie
+ * gewonnen - man muesste nur noch stur ablegen und dabei den Stapel
+ * durchblaettern. Das uebernimmt das Spiel selbst, Karte fuer Karte, und
+ * geht danach in die Gewinn-Kaskade ueber.
  */
 const autoLaeuft = ref(false)
-const AUTO_TAKT = 110   // ms zwischen zwei Karten
+const AUTO_TAKT = 90    // ms zwischen zwei Karten
 
 function autoMoeglich() {
   if (autoLaeuft.value || won.value) return false
-  if (stock.value.length || waste.value.length) return false
-  if (!tableau.value.some(spalte => spalte.length)) return false
+  // Waehrend Einsammeln, Mischen und Austeilen ist der Tisch nur scheinbar leer.
+  if (collecting.value || dealing.value || shuffling.value || showCard.value) return false
+  // Irgendwo muessen noch Karten liegen, sonst gibt es nichts abzulegen.
+  if (!stock.value.length && !waste.value.length && !tableau.value.some(s => s.length)) return false
+  // Ein leeres Spielfeld ganz ohne abgelegte Karte ist das frische Blatt.
+  if (!tableau.value.some(s => s.length) && !foundations.value.some(f => f.length)) return false
   return tableau.value.every(spalte => spalte.every(karte => karte.faceUp))
 }
 
@@ -315,6 +319,10 @@ function autoAblegen() {
   if (autoLaeuft.value) return
   autoLaeuft.value = true
   showToast('Alles offen – wird automatisch abgelegt ✨')
+
+  // Notbremse: Wird beim Durchblaettern des ganzen Stapels keine Karte mehr
+  // los, geht es nicht weiter (sollte bei offenem Feld nie passieren).
+  let leerlauf = 0
 
   const schritt = () => {
     if (won.value) { autoLaeuft.value = false; return }
@@ -325,8 +333,23 @@ function autoAblegen() {
       if (!spalte.length) continue
       gelegt = sendToFoundation({ type: 'tableau', index: i, cardIndex: spalte.length - 1 })
     }
+    if (!gelegt && waste.value.length) {
+      gelegt = sendToFoundation({ type: 'waste', index: 0, cardIndex: waste.value.length - 1 })
+    }
 
-    if (!gelegt) { autoLaeuft.value = false; return }
+    if (gelegt) {
+      leerlauf = 0
+    } else if (stock.value.length || waste.value.length) {
+      // Nichts passte: eine Runde weiterblaettern.
+      if (++leerlauf > stock.value.length + waste.value.length + 3) {
+        autoLaeuft.value = false
+        return
+      }
+      drawFromStock()
+    } else {
+      autoLaeuft.value = false
+      return
+    }
     dealTimers.push(setTimeout(schritt, AUTO_TAKT))
   }
   dealTimers.push(setTimeout(schritt, 420))
@@ -548,8 +571,9 @@ function onPointerUp(e: PointerEvent) {
 
     if (istDoppel) {
       letzterTipp = { zeit: 0, karte: '' }
-      // Zweiter Tipp: ab auf die Ablage, wenn die Karte dort passt.
-      if (!sendToFoundation(src)) select(src)
+      // Zweiter Tipp: ab auf die Ablage - und wenn das nicht geht, auf einen
+      // passenden Platz im Spielfeld.
+      if (!autoPlace(src)) { play('invalid'); select(src) }
     } else {
       letzterTipp = { zeit: jetzt, karte: kennung }
       select(src)
@@ -573,6 +597,9 @@ onBeforeUnmount(() => {
     <div class="knopfleiste">
       <span class="brandmark">Ninis <b>Spieleecke</b> 💖</span>
       <div class="knoepfe">
+        <span class="zeit" title="Spielzeit und Zuege">
+          <b>{{ timeLabel }}</b><i>{{ moves }} Zuege</i>
+        </span>
         <button class="sound" :title="muted ? 'Ton an' : 'Ton aus'" @click="toggleMute">
           {{ muted ? '🔇' : '🔊' }}
         </button>
@@ -823,6 +850,18 @@ onBeforeUnmount(() => {
 }
 .sound:hover { transform: translateY(-2px); }
 
+/* Spielzeit und Zuege - lesbar, aber dezent neben den Knoepfen. */
+.zeit {
+  display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: center; gap: 1px;
+  padding: 0 10px; height: 38px;
+  background: rgba(255,255,255,.8);
+  border-radius: 14px; box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums;
+}
+.zeit b { font-size: 15px; font-weight: 800; color: var(--pink-500); line-height: 1; }
+.zeit i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--pink-400); line-height: 1; }
+
 /* ---------- board ---------- */
 .board { position: relative; overflow: visible; }
 .top-row { display: flex; gap: var(--gap); margin-bottom: 22px; }
@@ -942,11 +981,11 @@ onBeforeUnmount(() => {
 /* ---------- eine gezogene Karte wird vom Stapel gedreht ----------
    Sie startet verdeckt auf dem Deck und dreht sich unterwegs um: bis zur
    Hälfte liegt die Rückseite oben, danach das Kartenbild. */
-.fanned { transition: left .24s cubic-bezier(.3,.8,.4,1); }
+.fanned { transition: left .14s cubic-bezier(.3,.8,.4,1); }
 
 :deep(.card.drawn) {
-  animation: draw-flip .46s cubic-bezier(.32,.7,.35,1) backwards;
-  animation-delay: calc(var(--d) * 110ms);
+  animation: draw-flip .26s cubic-bezier(.32,.7,.35,1) backwards;
+  animation-delay: calc(var(--d) * 55ms);
 }
 @keyframes draw-flip {
   from { transform: rotateY(180deg) scale(.97); }
@@ -966,8 +1005,8 @@ onBeforeUnmount(() => {
     linear-gradient(160deg, #ff7ab8, var(--pink-500));
   /* both: waehrend der Verzoegerung verdeckt, nach dem Umdrehen dauerhaft weg.
      Mit 'backwards' allein kaeme die Rueckseite am Ende zurueck. */
-  animation: draw-face .46s linear both;
-  animation-delay: calc(var(--d) * 110ms);
+  animation: draw-face .26s linear both;
+  animation-delay: calc(var(--d) * 55ms);
 }
 @keyframes draw-face {
   0%   { opacity: 1; }

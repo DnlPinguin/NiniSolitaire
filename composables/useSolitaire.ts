@@ -262,6 +262,37 @@ export function useSolitaire(options: SolitaireOptions = {}) {
     return false
   }
 
+  /**
+   * Zweiter Tipp auf eine Karte: erst die Ablage versuchen, sonst einen
+   * passenden Platz auf dem Spielfeld. Belegte Spalten haben Vorrang - eine
+   * leere Spalte ist selten das, was man beim Doppeltipp meint, und einen
+   * ganzen Stapel von einer leeren in die naechste leere Spalte zu schieben
+   * bringt ohnehin nichts.
+   */
+  function autoPlace(src: Source): boolean {
+    if (sendToFoundation(src)) return true
+
+    const from = pileFor(src)
+    const beweglich = from.slice(src.cardIndex)
+    if (!beweglich.length || beweglich.some(c => !c.faceUp)) return false
+
+    const belegte: number[] = []
+    const leere: number[] = []
+    tableau.value.forEach((spalte, i) => (spalte.length ? belegte : leere).push(i))
+
+    for (const i of belegte) {
+      if (tryMove(src, 'tableau', i)) return true
+    }
+    // In eine leere Spalte nur, wenn dadurch wirklich etwas frei wird.
+    const raeumtAuf = src.type !== 'tableau' || src.cardIndex > 0
+    if (raeumtAuf) {
+      for (const i of leere) {
+        if (tryMove(src, 'tableau', i)) return true
+      }
+    }
+    return false
+  }
+
   function select(src: Source) {
     const pile = pileFor(src)
     const card = pile[src.cardIndex]
@@ -413,7 +444,7 @@ export function useSolitaire(options: SolitaireOptions = {}) {
   return {
     stock, waste, foundations, tableau, moves, seconds, timeLabel, won, selection,
     hint, hintsLeft, canUndo, drawCount, lastDrawn, setDrawCount, shareCode, loadCode,
-    newGame, drawFromStock, select, clickEmpty, sendToFoundation, isSelected,
+    newGame, drawFromStock, select, clickEmpty, sendToFoundation, autoPlace, isSelected,
     tryMove, canMove, undo, useHint, isHinted, pileFor
   }
 }
