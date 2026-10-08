@@ -217,6 +217,7 @@ export function useSolitaire(options: SolitaireOptions = {}) {
     const cards = from.slice(src.cardIndex)
     if (!cards.length || cards.some(c => !c.faceUp)) return false
     if (target.type === 'foundation') {
+      if (src.type === 'foundation') return false
       return cards.length === 1 && canStackFoundation(cards[0]!, foundations.value[target.index]!)
     }
     if (src.type === 'tableau' && src.index === target.index) return false

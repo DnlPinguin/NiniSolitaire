@@ -7,7 +7,7 @@ useHead({ title: 'Solitaire · Ninis Spieleecke' })
 const { play, muted, toggleMute } = useSounds()
 
 const {
-  stock, waste, foundations, tableau, moves, timeLabel, won,
+  stock, waste, foundations, tableau, moves, timeLabel, won, selection,
   hintsLeft, canUndo, drawCount, lastDrawn, shareCode, loadCode,
   newGame, drawFromStock, select, clickEmpty, sendToFoundation, autoPlace, isSelected,
   tryMove, canMove, undo, useHint, isHinted, pileFor
@@ -550,11 +550,6 @@ function zielFuerAbwurf(src: Source): { type: 'foundation' | 'tableau'; index: n
   return { type: auswahl.type, index: auswahl.index }
 }
 
-// Der Browser liefert 'dblclick' bei Touch und bei minimaler Mausbewegung
-// unzuverlässig - deshalb erkennen wir den Doppeltipp selbst.
-let letzterTipp = { zeit: 0, karte: '' }
-const DOPPELTIPP_MS = 420
-
 function onPointerUp(e: PointerEvent) {
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
@@ -562,22 +557,16 @@ function onPointerUp(e: PointerEvent) {
 
   if (src && drag.moved) {
     const ziel = zielFuerAbwurf(src)
-    if (!ziel || !tryMove(src, ziel.type, ziel.index)) play('invalid')
+    // Auf die Ablage-Reihe geworfen: die Karte sucht sich ihren Platz selbst.
+    const ok = ziel?.type === 'foundation'
+      ? sendToFoundation(src)
+      : !!ziel && tryMove(src, ziel.type, ziel.index)
+    if (!ok) play('invalid')
   } else if (src) {
-    const kennung = `${src.type}-${src.index}-${src.cardIndex}`
-    const jetzt = performance.now()
-    const istDoppel =
-      kennung === letzterTipp.karte && jetzt - letzterTipp.zeit < DOPPELTIPP_MS
-
-    if (istDoppel) {
-      letzterTipp = { zeit: 0, karte: '' }
-      // Zweiter Tipp: ab auf die Ablage - und wenn das nicht geht, auf einen
-      // passenden Platz im Spielfeld.
-      if (!autoPlace(src)) { play('invalid'); select(src) }
-    } else {
-      letzterTipp = { zeit: jetzt, karte: kennung }
-      select(src)
-    }
+    // Ein Tipp genuegt: Ist schon eine Karte ausgewaehlt, ist dies das Ziel.
+    // Sonst geht die Karte direkt an einen passenden Platz.
+    if (selection.value || src.type === 'foundation') select(src)
+    else if (!autoPlace(src)) { play('invalid'); select(src) }
   }
 
   drag.active = false
