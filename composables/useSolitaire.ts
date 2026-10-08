@@ -218,7 +218,10 @@ export function useSolitaire(options: SolitaireOptions = {}) {
     if (!cards.length || cards.some(c => !c.faceUp)) return false
     if (target.type === 'foundation') {
       if (src.type === 'foundation') return false
-      return cards.length === 1 && canStackFoundation(cards[0]!, foundations.value[target.index]!)
+      const pile = foundations.value[target.index]!
+      // Jede Ablage gehoert einer Farbe - das Ass kommt auf das passende Symbol.
+      if (!pile.length && SUITS.indexOf(cards[0]!.suit) !== target.index) return false
+      return cards.length === 1 && canStackFoundation(cards[0]!, pile)
     }
     if (src.type === 'tableau' && src.index === target.index) return false
     const col = tableau.value[target.index]!
