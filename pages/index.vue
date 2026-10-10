@@ -962,6 +962,19 @@ onBeforeUnmount(() => {
   }
   to { transform: none; opacity: 1; }
 }
+/* Querformat: der Stapel liegt ueber der letzten Spalte. */
+@keyframes deal-in-rechts {
+  from {
+    transform:
+      translate(
+        calc((6 - var(--col)) * (var(--card-w) + var(--gap))),
+        calc(-1 * (var(--card-h) + 12px + var(--row) * var(--stack)))
+      )
+      rotate(12deg) scale(.92);
+    opacity: .85;
+  }
+  to { transform: none; opacity: 1; }
+}
 
 /* ---------- eine gezogene Karte wird vom Stapel gedreht ----------
    Sie startet verdeckt auf dem Deck und dreht sich unterwegs um: bis zur
@@ -1014,24 +1027,25 @@ onBeforeUnmount(() => {
   margin-top: auto;   /* schiebt die Leiste ans untere Ende */
   width: 100%;
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 12px 8px;
-  background: rgba(255, 235, 245, .94);
-  backdrop-filter: blur(12px);
-  border-radius: 26px;
-  box-shadow: var(--shadow);
+  gap: 8px;
+  padding: 0;
 }
 .action {
   touch-action: manipulation;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  background: none; border: 0; font: inherit; cursor: pointer;
-  font-size: 13px; font-weight: 800; color: var(--pink-500);
-  padding: 4px 2px;
-  transition: transform .14s, opacity .14s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 78px;
+  background: #fff; border: 2px solid #ffd0e6; border-radius: 18px;
+  box-shadow: 0 3px 8px rgba(214, 51, 132, .15);
+  font: inherit; cursor: pointer;
+  font-size: 15px; font-weight: 800; line-height: 1.1; text-align: center;
+  color: #b0105e;
+  padding: 10px 4px;
+  transition: transform .14s, opacity .14s, background .14s;
 }
 .action:hover:not(:disabled) { transform: translateY(-2px); }
-.action:disabled { opacity: .38; cursor: default; }
-.a-ico { position: relative; font-size: 24px; line-height: 1; }
+.action:active:not(:disabled) { transform: scale(.95); background: #ffeaf4; }
+.action:disabled { opacity: .45; cursor: default; }
+.a-ico { position: relative; font-size: 30px; line-height: 1; }
 .badge {
   position: absolute; top: -7px; right: -12px;
   background: var(--pink-500); color: #fff;
@@ -1116,7 +1130,56 @@ onBeforeUnmount(() => {
   .decor { height: 100px; }
   .quote { font-size: 18px; }
   .cheer { font-size: 16px; }
-  .action { font-size: 11px; }
+  .actions { gap: 6px; }
+  .action { font-size: 13px; min-height: 72px; border-radius: 16px; }
+  .a-ico { font-size: 28px; }
+}
+
+/* Handy quer: Knoepfe wandern in eine Spalte am rechten Rand (Daumen der
+   rechten Hand), das Spielfeld bekommt die ganze Hoehe. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .container {
+    --gap: 8px;
+    --rail: 92px;
+    --stack: calc(var(--card-w) * 0.32);
+    --card-w: min(
+      92px,
+      calc((100vw - var(--rail) - 48px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--gap) * 6) / 7),
+      calc((100svh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.1)
+    );
+    max-width: none;
+    display: grid;
+    grid-template-columns: var(--rail) 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "top board" "actions board";
+    min-height: 0;
+    height: calc(100svh - var(--kopfabstand, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    margin-bottom: 0;
+    column-gap: 12px;
+    padding: 10px calc(12px + env(safe-area-inset-right, 0px)) 10px calc(12px + env(safe-area-inset-left, 0px));
+  }
+  .knopfleiste { grid-area: top; flex-direction: column; align-items: stretch; margin: 0 0 8px; }
+  .brandmark { display: none; }
+  .knoepfe { flex-wrap: wrap; justify-content: space-between; gap: 6px; }
+  .zeit { flex: 1 1 100%; align-items: center; height: 34px; }
+  .sound { width: 40px; height: 34px; }
+  .board { grid-area: board; justify-self: center; align-self: start; }
+  .top-row { margin-bottom: 12px; }
+  /* Deck nach rechts unter den Daumen, Ablagen nach links. */
+  .top-row > .slot:not(.stock):not(.waste-slot) { order: 0; }
+  .top-row > .spacer { order: 1; }
+  .top-row > .waste-slot { order: 2; }
+  .top-row > .stock { order: 3; }
+  .draw-hint i { display: inline-block; transform: scaleX(-1); }
+  .stacked.dealt { animation-name: deal-in-rechts; }
+  .actions {
+    grid-area: actions;
+    position: static; margin: 0; align-self: end;
+    grid-template-columns: 1fr; gap: 6px;
+  }
+  .action { min-height: 0; font-size: 11px; padding: 6px 2px; gap: 3px; border-radius: 14px; }
+  .action > span:last-child { white-space: nowrap; }
   .a-ico { font-size: 20px; }
 }
 </style>
