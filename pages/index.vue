@@ -794,8 +794,8 @@ onBeforeUnmount(() => {
     calc((100svh - 210px - var(--kopfabstand, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 5.9)
   );
   --card-h: calc(var(--card-w) * 1.39);
-  --stack: calc(var(--card-w) * 0.33);
-  --fan: calc(var(--card-w) * 0.24);
+  --stack: calc(var(--card-w) * 0.4);
+  --fan: calc(var(--card-w) * 0.3);
   max-width: 900px;
   padding: 12px 16px 20px;
   /* Aussenabstand, nicht Innenabstand: nur so waechst die Seitenhoehe
@@ -1112,7 +1112,7 @@ onBeforeUnmount(() => {
 @media (max-width: 560px) {
   .container {
     --gap: 5px;
-    --stack: calc(var(--card-w) * 0.42);
+    --stack: calc(var(--card-w) * 0.48);
     padding-inline: 14px;
   }
       .draw-hint { font-size: 10px; }

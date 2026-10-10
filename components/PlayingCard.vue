@@ -32,7 +32,7 @@ const pupSrc = computed(() => pupSrcFor(props.card))
   height: var(--card-h);
   border-radius: 12px;
   background: #fff;
-  color: #3f2233;
+  color: #111;
   border: 2px solid #fff;
   box-shadow: 0 6px 14px rgba(214, 51, 132, .22);
   position: relative;
@@ -44,19 +44,19 @@ const pupSrc = computed(() => pupSrcFor(props.card))
   font-weight: 800;
   transition: transform .14s, box-shadow .14s;
 }
-.card.red { color: var(--pink-500); }
+.card.red { color: #d0103a; }
 
 .head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: calc(var(--card-w) * .07) calc(var(--card-w) * .1) 0;
+  padding: calc(var(--card-w) * .04) calc(var(--card-w) * .06) 0;
   line-height: 1;
 }
-.rank { font-size: calc(var(--card-w) * .3); font-family: 'Baloo 2', sans-serif; }
-.suit { font-size: calc(var(--card-w) * .26); }
+.rank { font-size: calc(var(--card-w) * .4); font-family: 'Baloo 2', sans-serif; letter-spacing: -.04em; }
+.suit { font-size: calc(var(--card-w) * .36); }
 
 .photo {
   position: absolute; left: 3%; right: 3%; bottom: 3%;
-  height: 70%;
+  height: 66%;
 }
 .photo img {
   width: 100%; height: 100%;
