@@ -731,7 +731,7 @@ onBeforeUnmount(() => {
 
     <nav class="actions">
       <button class="action" :disabled="!canUndo" @click="undo">
-        <span class="a-ico">↺</span><span>Rückgängig</span>
+        <span class="a-ico">↺</span><span>Zurück</span>
       </button>
       <button class="action" @click="onHint">
         <span class="a-ico">
@@ -1131,16 +1131,16 @@ onBeforeUnmount(() => {
   .quote { font-size: 18px; }
   .cheer { font-size: 16px; }
   .actions { gap: 6px; }
-  .action { font-size: 13px; min-height: 72px; border-radius: 16px; }
+  .action { font-size: 16px; min-height: 78px; border-radius: 16px; padding: 8px 2px; }
   .a-ico { font-size: 28px; }
 }
 
 /* Handy quer: Knoepfe wandern in eine Spalte am rechten Rand (Daumen der
    rechten Hand), das Spielfeld bekommt die ganze Hoehe. */
-@media (orientation: landscape) and (max-height: 520px) {
+@media (orientation: landscape) and (max-height: 600px), (orientation: landscape) and (pointer: coarse) and (max-height: 900px) {
   .container {
     --gap: 8px;
-    --rail: 92px;
+    --rail: 108px;
     --stack: calc(var(--card-w) * 0.32);
     --card-w: min(
       92px,
@@ -1178,8 +1178,8 @@ onBeforeUnmount(() => {
     position: static; margin: 0; align-self: end;
     grid-template-columns: 1fr; gap: 6px;
   }
-  .action { min-height: 0; font-size: 11px; padding: 6px 2px; gap: 3px; border-radius: 14px; }
+  .action { min-height: 0; font-size: 14px; padding: 6px 2px; gap: 3px; border-radius: 14px; }
   .action > span:last-child { white-space: nowrap; }
-  .a-ico { font-size: 20px; }
+  .a-ico { font-size: 22px; }
 }
 </style>
