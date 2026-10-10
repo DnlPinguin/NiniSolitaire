@@ -8,7 +8,7 @@ const { play, muted, toggleMute } = useSounds()
 
 const {
   stock, waste, foundations, tableau, moves, timeLabel, won, selection,
-  hintsLeft, canUndo, drawCount, lastDrawn, shareCode, loadCode,
+  canUndo, drawCount, lastDrawn, shareCode, loadCode,
   newGame, drawFromStock, select, clickEmpty, sendToFoundation, autoPlace, isSelected,
   tryMove, canMove, undo, useHint, isHinted, pileFor
 } = useSolitaire({ onEvent: play })
@@ -733,16 +733,12 @@ onBeforeUnmount(() => {
       <button class="action" :disabled="!canUndo" @click="undo">
         <span class="a-ico">↺</span><span>Rückgängig</span>
       </button>
-      <!-- Tipp-Button entfernt (2026-09-10). Logik liegt weiter im Composable,
-           zum Reaktivieren einfach wieder einkommentieren und .actions auf
-           repeat(4, 1fr) zurücksetzen:
-      <button class="action" :disabled="hintsLeft === 0" @click="onHint">
+      <button class="action" @click="onHint">
         <span class="a-ico">
-          💡<em v-if="hintsLeft > 0" class="badge">{{ hintsLeft }}</em>
+          💡
         </span>
         <span>Tipp</span>
       </button>
-      -->
       <button class="action" @click="startGame">
         <span class="a-ico">🃏</span><span>Neues Spiel</span>
       </button>
@@ -875,8 +871,8 @@ onBeforeUnmount(() => {
 .recycle { font-size: 30px; }
 .draw-hint { font-size: 13px; text-align: center; line-height: 1.25; }
 .draw-hint i { font-style: normal; font-size: 22px; }
-.empty.glow { border-color: var(--pink-500); background: rgba(246,51,140,.14); animation: glow 1s ease-in-out infinite; }
-@keyframes glow { 50% { box-shadow: 0 0 0 5px rgba(246,51,140,.25); } }
+.empty.glow { border: 3px solid #ff1f8f; background: rgba(246,51,140,.25); animation: glow .9s ease-in-out infinite; }
+@keyframes glow { 50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,31,143,.45), 0 0 24px 6px rgba(255,31,143,.6); } }
 
 .tableau { display: flex; gap: var(--gap); }
 .column { width: var(--card-w); position: relative; min-height: calc(var(--card-h) + var(--stack) * 8); }
@@ -1017,7 +1013,7 @@ onBeforeUnmount(() => {
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   margin-top: auto;   /* schiebt die Leiste ans untere Ende */
   width: 100%;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 12px 8px;
   background: rgba(255, 235, 245, .94);

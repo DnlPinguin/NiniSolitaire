@@ -353,10 +353,8 @@ export function useSolitaire(options: SolitaireOptions = {}) {
 
   /** Returns the hint it found, or null when no legal move exists (costs nothing). */
   function useHint(): Hint | null {
-    if (hintsLeft.value <= 0) return null
     const found = findHint()
     hint.value = found
-    if (found) hintsLeft.value--
     emit(found ? 'hint' : 'nohint')
     return found
   }

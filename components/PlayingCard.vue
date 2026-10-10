@@ -79,12 +79,16 @@ const pupSrc = computed(() => pupSrcFor(props.card))
 .paw { font-size: calc(var(--card-w) * .4); opacity: .55; filter: grayscale(1) brightness(3); }
 
 .card.selected { outline: 3px solid var(--pink-600); outline-offset: -3px; transform: translateY(-5px); }
-.card.hinted { animation: pulse 1s ease-in-out infinite; }
+.card.hinted {
+  outline: 4px solid #ff1f8f; outline-offset: -4px;
+  animation: pulse .9s ease-in-out infinite;
+  z-index: 5;
+}
 /* Beim Ziehen liegt die Karte in der Hand — am alten Platz bleibt nichts zurück. */
 .card.dragging { visibility: hidden; }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 6px 14px rgba(214,51,132,.22); }
-  50% { box-shadow: 0 0 0 4px rgba(246,51,140,.55), 0 6px 18px rgba(214,51,132,.35); }
+  0%, 100% { transform: translateY(0); box-shadow: 0 0 0 3px rgba(255,31,143,.5), 0 6px 14px rgba(214,51,132,.3); }
+  50% { transform: translateY(-6px) scale(1.04); box-shadow: 0 0 0 8px rgba(255,31,143,.45), 0 0 24px 6px rgba(255,31,143,.6); }
 }
 </style>
